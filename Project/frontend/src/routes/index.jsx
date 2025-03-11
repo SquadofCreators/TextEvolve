@@ -13,7 +13,7 @@ function AppRoutes() {
   const isLoggedIn = !!localStorage.getItem('token');
 
   return (
-    <Router basename="/TextEvolve/">
+    <Router>
       <Routes>
         {/* Public Route */}
         <Route path="/login" element={<Login />} />
@@ -30,7 +30,6 @@ function AppRoutes() {
           />
         </Route>
 
-        
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>
     </Router>
