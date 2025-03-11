@@ -1,7 +1,7 @@
 // src/routes/index.jsx
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import ProtectedRoutes from './ProtectedRoutes';
 
 // Pages & Layouts
