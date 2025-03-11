@@ -4,9 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/TextEvolve/',
   plugins: [
     react(),
     tailwindcss(),
   ],
-  base:'/TextEvolve/'
 })
