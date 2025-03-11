@@ -16,22 +16,22 @@ function LandingPage() {
     {
       name: 'Tamil Nadu Govt.',
       logo: TNLogo,
-      link: 'https://google.co.in',
+      link: 'https://www.tn.gov.in/',
     },
     {
       name: 'Naan Mudhalvan',
       logo: NMLogo,
-      link: 'https://google.co.in',
+      link: 'https://naanmudhalvan.tn.gov.in/',
     },
     {
       name: 'Niral Thiruvizha',
       logo: NTLogo,
-      link: 'https://google.co.in',
+      link: 'https://niralthiruvizha.in/',
     },
     {
       name: 'Anna University',
       logo: AULogo,
-      link: 'https://google.co.in',
+      link: 'https://www.annauniv.edu/',
     },
   ];
 

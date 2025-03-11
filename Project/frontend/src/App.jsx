@@ -1,14 +1,10 @@
-import { useEffect } from 'react';
-import './App.css';
-import LandingPage from './pages/LandingPage';
-import MainLayout from './layouts/MainLayout';
+// src/App.jsx
+
+import React from 'react';
+import AppRoutes from './routes';
 
 function App() {
-  return (
-    <MainLayout>
-      <LandingPage />
-    </MainLayout>
-  );
+  return <AppRoutes />;
 }
 
 export default App;
