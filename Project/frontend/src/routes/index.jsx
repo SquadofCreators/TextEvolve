@@ -10,7 +10,6 @@ import LandingPage from '../pages/LandingPage';
 import MainLayout from '../layouts/MainLayout';
 
 function AppRoutes() {
-  // Example: Replace with your own login check
   const isLoggedIn = !!localStorage.getItem('token');
 
   return (
