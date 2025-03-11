@@ -1,10 +1,10 @@
 // src/routes/ProtectedRoutes.jsx
-
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-function ProtectedRoutes({ isLoggedIn }) {
-  // If not logged in, redirect to /login
+function ProtectedRoutes() {
+  const { isLoggedIn } = useAuth();
   return isLoggedIn ? <Outlet /> : <Navigate to="/login" />;
 }
 

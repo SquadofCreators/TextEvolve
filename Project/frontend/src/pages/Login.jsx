@@ -1,19 +1,19 @@
 // src/pages/Login.jsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import BannerImg from '../assets/images/banner-bg.jpg';
 
 function Login() {
   const { darkMode } = useTheme();
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // Dummy credentials
   const dummyEmail = 'admin@gmail.com';
   const dummyPassword = '123456';
 
@@ -21,12 +21,13 @@ function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (email === dummyEmail && password === dummyPassword) {
-      localStorage.setItem('token', 'dummyToken');
+      login();
       navigate('/');
     } else {
       setError('Invalid credentials');
     }
   };
+
 
   return (
     <div
