@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { Link } from 'react-router-dom';
 import {
   FiGrid,
   FiUpload,
@@ -14,20 +15,24 @@ import {
 } from 'react-icons/bs';
 
 const topLinks = [
-  { name: 'Dashboard', href: '#', icon: <FiGrid className="w-5 h-5" /> },
-  { name: 'Upload', href: '#', icon: <FiUpload className="w-5 h-5" /> },
-  { name: 'Analytics', href: '#', icon: <FiBarChart2 className="w-5 h-5" /> },
-  { name: 'History', href: '#', icon: <FiClock className="w-5 h-5" /> },
+  { name: 'Dashboard', link: '/', icon: <FiGrid className="w-5 h-5" /> },
+  { name: 'Upload', link: '#', icon: <FiUpload className="w-5 h-5" /> },
+  { name: 'Analytics', link: '#', icon: <FiBarChart2 className="w-5 h-5" /> },
+  { name: 'History', link: '#', icon: <FiClock className="w-5 h-5" /> },
 ];
 
 const bottomLinks = [
-  { name: 'Support', href: '#', icon: <FiHeadphones className="w-5 h-5" /> },
-  { name: 'Settings', href: '#', icon: <FiSettings className="w-5 h-5" /> },
+  { name: 'Support', link: '#', icon: <FiHeadphones className="w-5 h-5" /> },
+  { name: 'Settings', link: '#', icon: <FiSettings className="w-5 h-5" /> },
 ];
 
 export default function Sidebar() {
   const { darkMode, toggleTheme } = useTheme();
   const [activeLink, setActiveLink] = useState('Dashboard');
+
+  const handleLinkClick = (name) => () => {
+    setActiveLink(name);
+  };
 
   return (
     <aside
@@ -48,19 +53,20 @@ export default function Sidebar() {
 
       {/* Top Links */}
       <nav className="flex flex-col gap-2">
-        {topLinks.map((link) => (
-          <button
-            key={link.name}
-            onClick={() => setActiveLink(link.name)}
+        {topLinks.map((item) => (
+          <Link
+            key={item.name}
+            onClick={handleLinkClick(item.name)}
+            to={item.link}
             className={`flex items-center gap-3 text-left px-3 py-2 rounded-md transition-colors ${
-              activeLink === link.name
+              activeLink === item.name
                 ? 'bg-orange-500 text-white'
                 : 'hover:bg-gray-300 dark:hover:bg-gray-700'
             }`}
           >
-            {link.icon}
-            <span>{link.name}</span>
-          </button>
+            {item.icon}
+            <span>{item.name}</span>
+          </Link>
         ))}
       </nav>
 

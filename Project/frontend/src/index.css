@@ -12,3 +12,7 @@
 @theme {
     --font-righteous: 'Righteous', sans-serif;
 }
+
+*{
+    scroll-behavior: smooth;
+}

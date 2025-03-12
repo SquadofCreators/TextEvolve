@@ -8,23 +8,29 @@ import {
   FiBell,
   FiUser,
   FiLogOut,
+  FiMoon,
+  FiSun, // <-- Import Sun and Moon icons
 } from 'react-icons/fi';
+import { IoIosArrowDown } from "react-icons/io";
 import { navLinks } from '../data/navLinks';
-import { useTheme } from '../contexts/ThemeContext';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext'; // <-- Import useTheme
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { darkMode } = useTheme();
-  const navigate = useNavigate();
+  const [activeLink, setActiveLink] = useState('');
   const profileRef = useRef(null);
   const menuRef = useRef(null);
+
+  const { user, logout } = useAuth();
+  const { darkMode, toggleTheme } = useTheme(); 
+  const navigate = useNavigate();
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
   const toggleProfile = () => setProfileOpen(!profileOpen);
 
-  // Close profile dropdown when clicking outside of it
   useEffect(() => {
     const handleClickOutsideProfile = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -36,7 +42,6 @@ function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutsideProfile);
   }, []);
 
-  // Close mobile menu when clicking outside of it
   useEffect(() => {
     const handleClickOutsideMenu = (e) => {
       if (menuOpen && menuRef.current && !menuRef.current.contains(e.target)) {
@@ -49,20 +54,23 @@ function Navbar() {
   }, [menuOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login'); // Adjust the path if needed
+    logout();
+  };
+
+  const handleProfile = () => {
+    navigate('/user-profile');
+    setProfileOpen(false);
+    setMenuOpen(false);
+    setActiveLink('');
   };
 
   return (
     <header className="sticky top-0 w-full z-50 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 shadow transition-colors">
       {/* Top Bar (Desktop & Mobile) */}
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 py-4 md:py-3 flex items-center justify-between">
         {/* Logo (Mobile) */}
         <div className="md:hidden flex items-center space-x-2">
-          <div className="p-2 rounded bg-gray-200 dark:bg-gray-700">
-            <span className="font-bold text-orange-500">Te</span>
-          </div>
-          <span className="font-semibold text-xl">
+          <span className="font-semibold text-xl font-righteous tracking-widest">
             <span className="text-orange-500">Text</span>Evolve
           </span>
         </div>
@@ -91,16 +99,25 @@ function Navbar() {
           <div className="hidden md:flex items-center relative" ref={profileRef}>
             <button
               onClick={toggleProfile}
-              className="flex items-center space-x-2 focus:outline-none"
+              className="flex items-center space-x-2 focus:outline-none cursor-pointer"
             >
               <img
-                src="https://avatars.githubusercontent.com/u/146237001?v=4"
+                src={user?.avatar || "https://placehold.co/200x200?text=Te"}
                 alt="User avatar"
                 className="w-8 h-8 rounded-full border border-orange-500"
               />
               <div className="leading-tight text-left">
-                <span className="font-semibold">John Doe</span>
-                <span className="block text-xs text-gray-500">Admin</span>
+                <span className="font-semibold flex items-center gap-1">
+                  <span className="truncate max-w-[15ch]">{user?.name}</span>
+                  {profileOpen ? (
+                    <IoIosArrowDown className="inline-flex ml-1 mb-0.5 rotate-180" />
+                  ) : (
+                    <IoIosArrowDown className="inline-flex ml-1 mb-0.5" />
+                  )}
+                </span>
+                <span className="block text-xs text-gray-500">
+                  {user?.role || "User"}
+                </span>
               </div>
             </button>
 
@@ -112,9 +129,8 @@ function Navbar() {
                 <ul>
                   <li>
                     <button
-                      onClick={() => setProfileOpen(false)}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 
-                                 flex items-center gap-2"
+                      onClick={handleProfile}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center gap-2"
                     >
                       <FiUser className="w-4 h-4" />
                       Profile
@@ -124,8 +140,7 @@ function Navbar() {
                   <li>
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 
-                                 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center gap-2"
                     >
                       <FiLogOut className="w-4 h-4" />
                       Logout
@@ -148,7 +163,7 @@ function Navbar() {
         <div className="absolute inset-0 bg-black/40" />
 
         {/* Slide-in Menu */}
-        <div 
+        <div
           ref={menuRef}
           className={`absolute top-0 right-0 w-3/4 max-w-xs h-full bg-gray-100 dark:bg-gray-900 
                       text-gray-800 dark:text-gray-100 shadow-lg transform transition-transform duration-400
@@ -156,15 +171,18 @@ function Navbar() {
         >
           {/* Mobile User Info */}
           <div className="flex items-center justify-between p-4 space-x-3 border-b border-gray-300 dark:border-gray-700">
-            <div className='flex gap-3'>
+            <div 
+              className="flex gap-3 cursor-pointer"
+              onClick={handleProfile}
+            >
               <img
-                src="https://avatars.githubusercontent.com/u/146237001?v=4"
+                src={user?.avatar || "https://placehold.co/200x200?text=Te"}
                 alt="User avatar"
                 className="w-10 h-10 rounded-full border border-orange-500"
               />
               <div>
-                <p className="font-semibold">John Doe</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+                <p className="font-semibold truncate max-w-[15ch]">{user?.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role || "User"}</p>
               </div>
             </div>
             <button onClick={toggleMenu}>
@@ -180,8 +198,7 @@ function Navbar() {
                 type="text"
                 placeholder="Search documents"
                 className="w-full pl-10 pr-4 py-2 rounded-md outline-none border border-gray-300 
-                           focus:border-orange-500 bg-white text-gray-800 
-                           dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+                           focus:border-orange-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
               />
             </div>
           </div>
@@ -191,26 +208,48 @@ function Navbar() {
             <ul className="space-y-3">
               {navLinks.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    className="flex items-center gap-2 px-2 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                  <Link
+                    to={link.link}
+                    onClick={() => {
+                      setActiveLink(link.name);
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                   >
                     {link.icon}
                     <span>{link.name}</span>
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </nav>
 
-          {/* Logout Button (bottom) */}
-          <div className="mt-auto p-4 border-t border-gray-300 dark:border-gray-700">
+          {/* Theme Toggle & Logout (bottom) */}
+          <div className="absolute bottom-0 w-full mt-auto p-2 border-t border-gray-300 dark:border-gray-700 space-y-2">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              {darkMode ? (
+                <>
+                  <FiSun className="w-5 h-5" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <FiMoon className="w-5 h-5" />
+                  Dark Mode
+                </>
+              )}
+            </button>
+
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 text-sm px-2 py-2 rounded w-full 
-                         hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="flex items-center gap-2 px-4 py-2 rounded text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
             >
-              <FiLogOut className="w-4 h-4" />
+              <FiLogOut className="w-5 h-5" />
               Logout
             </button>
           </div>

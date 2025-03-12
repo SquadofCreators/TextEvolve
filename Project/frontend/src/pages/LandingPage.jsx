@@ -8,8 +8,16 @@ import NTLogo from '../assets/images/logos/nt-logo.svg';
 import AULogo from '../assets/images/logos/au-logo.svg';
 import { useTheme } from '../contexts/ThemeContext';
 
+import docData from '../data/DocData';
+import DocCard from '../components/DocCard';
+
 function LandingPage() {
   const { darkMode } = useTheme();
+
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Logos Data
   const bannerLogos = [
@@ -61,7 +69,7 @@ function LandingPage() {
   }, []);
 
   return (
-    <div>
+    <div className='pb-12'>
       {/* Banner Image */}
       <div className="relative rounded-xl overflow-hidden border border-gray-700 dark:border-none select-none">
         <img
@@ -86,25 +94,25 @@ function LandingPage() {
                 <img
                   src={logo.logo}
                   alt={logo.name}
-                  className="w-12 h-12 cursor-pointer"
+                  className="w-10 h-10 md:w-12 md:h-12 cursor-pointer"
                 />
               </a>
             ))}
           </div>
 
-          <h1 className="text-center text-4xl font-bold text-gray-800">
+          <h1 className="text-center text-2xl md:text-4xl font-bold text-gray-800">
             Digitize <span className="text-orange-500">History,</span> <br />
             Empower the Future
           </h1>
 
-          <p className="text-base text-gray-500 text-center break-words max-w-2xl">
+          <p className="hidden md:block text-base text-gray-500 text-center break-words max-w-2xl">
             Transform your handwritten records and archival documents into accessible, searchable digital formats with our advanced AI-powered OCR solution.
           </p>
         </div>
       </div>
 
       {/* Recent Files + Dropdown */}
-      <div className="flex items-center px-6 mt-10">
+      <div className="flex items-center px-1 mt-10">
         <p className="text-gray-800 dark:text-gray-300">Recent Files</p>
 
         {/* Dropdown Filter */}
@@ -172,6 +180,22 @@ function LandingPage() {
           )}
         </div>
       </div>
+
+      {/* Document Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1 mt-6">
+        {docData.map((data) => (
+          <DocCard key={data.uniqueId} data={data} />
+        ))}
+        {/* Pagination */}
+        <div className="w-full flex items-center justify-center mt-6 md:col-span-3">
+          <button
+            className="px-4 py-1.5 rounded-full bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors cursor-pointer"
+          >
+            Load More
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }
