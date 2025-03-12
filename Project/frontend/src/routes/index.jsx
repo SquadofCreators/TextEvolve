@@ -1,16 +1,29 @@
-// src/routes/index.jsx
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import ProtectedRoutes from './ProtectedRoutes';
 
 // Pages & Layouts
 import Login from '../pages/Login';
-import LandingPage from '../pages/LandingPage';
-import MainLayout from '../layouts/MainLayout';
-import NotFound from '../pages/NotFound';
 import SignUp from '../pages/SignUp';
+import LandingPage from '../pages/LandingPage';
 import UserProfile from '../pages/UserProfile';
+import UploadPage from '../pages/UploadPage';
+import AnalyticsPage from '../pages/AnalyticsPage';
+import SupportPage from '../pages/SupportPage';
+import HistoryPage from '../pages/HistoryPage';
+import SettingsPage from '../pages/SettingsPage';
+import NotFound from '../pages/NotFound';
+import MainLayout from '../layouts/MainLayout';
+
+const protectedRoutes = [
+  { path: '/', element: <LandingPage /> },
+  { path: '/user-profile', element: <UserProfile /> },
+  { path: '/upload', element: <UploadPage /> },
+  { path: '/analytics', element: <AnalyticsPage /> },
+  { path: '/history', element: <HistoryPage /> },
+  { path: '/support', element: <SupportPage /> },
+  { path: '/settings', element: <SettingsPage /> },
+];
 
 function AppRoutes() {
   const isLoggedIn = !!localStorage.getItem('token');
@@ -18,28 +31,19 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
-        {/* Public Route */}
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoutes isLoggedIn={isLoggedIn} />}>
-          <Route
-            path="/"
-            element={
-              <MainLayout>
-                <LandingPage />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/user-profile"
-            element={
-              <MainLayout>
-                <UserProfile />
-              </MainLayout>
-            }
-          />
+          {protectedRoutes.map(({ path, element }) => (
+            <Route
+              key={path}
+              path={path}
+              element={<MainLayout>{element}</MainLayout>}
+            />
+          ))}
         </Route>
 
         <Route path="*" element={<NotFound />} />

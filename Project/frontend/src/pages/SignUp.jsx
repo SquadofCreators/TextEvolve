@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link as ScrollTo } from 'react-scroll';
 import { Link } from 'react-router-dom';
-import { IoArrowForward } from "react-icons/io5";
+import { IoArrowForward, IoEye, IoEyeOff } from "react-icons/io5";
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -37,6 +37,8 @@ function Signup() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // State for password toggle
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Example submit handler with dummy signup validation
   const handleSubmit = (e) => {
@@ -164,41 +166,61 @@ function Signup() {
             </div>
 
             {/* Password Field */}
-            <div>
+            <div className="relative">
               <label htmlFor="password" className="block text-sm font-medium">
                 Password
               </label>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className={`w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                className={`w-full px-4 py-2 pr-10 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                   darkMode
                     ? 'bg-gray-800 border-gray-700 text-gray-200'
                     : 'bg-white border-gray-300 text-gray-800'
                 }`}
               />
+              <div 
+                className="absolute translate-y-1/7 inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <IoEyeOff className="text-gray-500 h-4 w-4 dark:text-gray-300" />
+                ) : (
+                  <IoEye className="text-gray-500 h-4 w-4 dark:text-gray-300" />
+                )}
+              </div>
             </div>
 
             {/* Confirm Password Field */}
-            <div>
+            <div className="relative">
               <label htmlFor="confirmPassword" className="block text-sm font-medium">
                 Confirm Password
               </label>
               <input
                 id="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'} 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className={`w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                className={`w-full px-4 py-2 pr-10 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                   darkMode
                     ? 'bg-gray-800 border-gray-700 text-gray-200'
                     : 'bg-white border-gray-300 text-gray-800'
                 }`}
               />
+              <div 
+                className="absolute translate-y-1/7 inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <IoEyeOff className="text-gray-500 h-4 w-4 dark:text-gray-300" />
+                ) : (
+                  <IoEye className="text-gray-500 h-4 w-4 dark:text-gray-300" />
+                )}
+              </div>
             </div>
 
             {/* Submit Button */}

@@ -57,7 +57,7 @@ function DocCard({ data }) {
         
         {/* Share Button on Top Right */}
         <button
-            className="rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer p-2"
             onClick={() => alert('Share functionality')}
             title="Share Document"
         >
@@ -95,7 +95,7 @@ function DocCard({ data }) {
       >
         <button
           onClick={toggleDownload}
-          className="flex items-center gap-1 px-4 py-1.5 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors"
+          className="flex items-center gap-1 px-4 py-1.5 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors cursor-pointer"
         >
           Download <FiChevronDown className="w-4 h-4" />
         </button>

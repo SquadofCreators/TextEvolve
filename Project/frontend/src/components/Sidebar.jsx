@@ -16,14 +16,14 @@ import {
 
 const topLinks = [
   { name: 'Dashboard', link: '/', icon: <FiGrid className="w-5 h-5" /> },
-  { name: 'Upload', link: '#', icon: <FiUpload className="w-5 h-5" /> },
-  { name: 'Analytics', link: '#', icon: <FiBarChart2 className="w-5 h-5" /> },
-  { name: 'History', link: '#', icon: <FiClock className="w-5 h-5" /> },
+  { name: 'Upload', link: '/upload', icon: <FiUpload className="w-5 h-5" /> },
+  { name: 'Analytics', link: '/analytics', icon: <FiBarChart2 className="w-5 h-5" /> },
+  { name: 'History', link: '/history', icon: <FiClock className="w-5 h-5" /> },
 ];
 
 const bottomLinks = [
-  { name: 'Support', link: '#', icon: <FiHeadphones className="w-5 h-5" /> },
-  { name: 'Settings', link: '#', icon: <FiSettings className="w-5 h-5" /> },
+  { name: 'Support', link: '/support', icon: <FiHeadphones className="w-5 h-5" /> },
+  { name: 'Settings', link: '/settings', icon: <FiSettings className="w-5 h-5" /> },
 ];
 
 export default function Sidebar() {
@@ -40,16 +40,16 @@ export default function Sidebar() {
                  bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300"
     >
       {/* Logo */}
-      <div className="flex items-center gap-2 mb-8">
+      <Link to={'/'} className="flex items-center gap-2 mb-8">
         <div className="p-2 rounded bg-gray-800 dark:bg-gray-700">
           <span className="flex items-center font-righteous font-bold tracking-wide text-xl text-orange-500">
             T <span className="text-white">e</span>
           </span>
         </div>
-        <span className="text-xl font-righteous font-bold tracking-widest">
+        <div className="text-xl font-righteous font-bold tracking-widest">
           <span className="text-orange-500">Text</span>Evolve
-        </span>
-      </div>
+        </div>
+      </Link>
 
       {/* Top Links */}
       <nav className="flex flex-col gap-2">
@@ -72,24 +72,25 @@ export default function Sidebar() {
 
       {/* Bottom Section with Support, Settings, and Theme Toggle */}
       <div className="mt-auto flex flex-col gap-2">
-        {bottomLinks.map((link) => (
-          <button
-            key={link.name}
-            onClick={() => setActiveLink(link.name)}
-            className={`flex items-center gap-3 text-left px-3 py-2 rounded-md transition-colors ${
-              activeLink === link.name
+        {bottomLinks.map((item) => (
+          <Link
+            key={item.name}
+            onClick={() => setActiveLink(item.name)}
+            to={item.link}
+            className={`flex items-center gap-3 text-left px-3 py-2 rounded-md transition-colors cursor-pointer ${
+              activeLink === item.name
                 ? 'bg-orange-500 text-white'
                 : 'hover:bg-gray-300 dark:hover:bg-gray-700'
             }`}
           >
-            {link.icon}
-            <span>{link.name}</span>
-          </button>
+            {item.icon}
+            <span>{item.name}</span>
+          </Link>
         ))}
 
         <button
           onClick={toggleTheme}
-          className="mt-2 px-3 py-2 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200 rounded-md transition-colors"
+          className="mt-2 px-3 py-2 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200 rounded-md transition-colors cursor-pointer"
         >
           <span className="flex items-center gap-3">
             {darkMode ? (
