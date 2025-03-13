@@ -15,7 +15,7 @@ import { IoIosArrowDown } from "react-icons/io";
 import { navLinks } from '../data/navLinks';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext'; // <-- Import useTheme
+import { useTheme } from '../contexts/ThemeContext';
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
