@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
+
 import {
   FiGrid,
   FiUpload,
@@ -14,25 +15,21 @@ import {
   BsFillBrightnessHighFill,
 } from 'react-icons/bs';
 
-const topLinks = [
-  { name: 'Dashboard', link: '/', icon: <FiGrid className="w-5 h-5" /> },
-  { name: 'Upload', link: '/upload', icon: <FiUpload className="w-5 h-5" /> },
-  { name: 'Analytics', link: '/analytics', icon: <FiBarChart2 className="w-5 h-5" /> },
-  { name: 'History', link: '/history', icon: <FiClock className="w-5 h-5" /> },
-];
+import { navLinks } from '../data/navLinks';
 
 const bottomLinks = [
-  { name: 'Support', link: '/support', icon: <FiHeadphones className="w-5 h-5" /> },
-  { name: 'Settings', link: '/settings', icon: <FiSettings className="w-5 h-5" /> },
+  { name: 'Support', action: '/support', icon: <FiHeadphones className="w-5 h-5" /> },
+  { name: 'Settings', action: '/settings', icon: <FiSettings className="w-5 h-5" /> },
 ];
 
 export default function Sidebar() {
-  const { darkMode, toggleTheme } = useTheme();
   const [activeLink, setActiveLink] = useState('Dashboard');
 
   const handleLinkClick = (name) => () => {
     setActiveLink(name);
   };
+
+  const links = navLinks();
 
   return (
     <aside
@@ -53,30 +50,32 @@ export default function Sidebar() {
 
       {/* Top Links */}
       <nav className="flex flex-col gap-2">
-        {topLinks.map((item) => (
-          <Link
-            key={item.name}
-            onClick={handleLinkClick(item.name)}
-            to={item.link}
-            className={`flex items-center gap-3 text-left px-3 py-2 rounded-md transition-colors ${
-              activeLink === item.name
-                ? 'bg-orange-500 text-white'
-                : 'hover:bg-gray-300 dark:hover:bg-gray-700'
-            }`}
-          >
-            {item.icon}
-            <span>{item.name}</span>
-          </Link>
-        ))}
+        {links.map((item, index) =>
+          item.showOnTop ? (
+            <Link
+              key={index}
+              onClick={handleLinkClick(item.name)}
+              to={item.action}
+              className={`flex items-center gap-3 text-left px-3 py-2 rounded-md transition-colors ${
+                activeLink === item.name
+                  ? 'bg-orange-500 text-white'
+                  : 'hover:bg-gray-300 dark:hover:bg-gray-700'
+              }`}
+            >
+              {item.icon}
+              <span>{item.name}</span>
+            </Link>
+          ) : null
+        )}
       </nav>
 
-      {/* Bottom Section with Support, Settings, and Theme Toggle */}
+      {/* Bottom Section */}
       <div className="mt-auto flex flex-col gap-2">
         {bottomLinks.map((item) => (
           <Link
             key={item.name}
             onClick={() => setActiveLink(item.name)}
-            to={item.link}
+            to={item.action}
             className={`flex items-center gap-3 text-left px-3 py-2 rounded-md transition-colors cursor-pointer ${
               activeLink === item.name
                 ? 'bg-orange-500 text-white'
@@ -88,19 +87,6 @@ export default function Sidebar() {
           </Link>
         ))}
 
-        <button
-          onClick={toggleTheme}
-          className="mt-2 px-3 py-2 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200 rounded-md transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-3">
-            {darkMode ? (
-              <BsFillBrightnessHighFill className="w-5 h-5" />
-            ) : (
-              <BsFillMoonStarsFill className="w-5 h-5" />
-            )}
-            <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-          </span>
-        </button>
       </div>
     </aside>
   );

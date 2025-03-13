@@ -11,7 +11,7 @@ import UploadPage from '../pages/UploadPage';
 import AnalyticsPage from '../pages/AnalyticsPage';
 import SupportPage from '../pages/SupportPage';
 import HistoryPage from '../pages/HistoryPage';
-import SettingsPage from '../pages/SettingsPage';
+import Settings from '../pages/Settings';
 import NotFound from '../pages/NotFound';
 import MainLayout from '../layouts/MainLayout';
 
@@ -22,7 +22,7 @@ const protectedRoutes = [
   { path: '/analytics', element: <AnalyticsPage /> },
   { path: '/history', element: <HistoryPage /> },
   { path: '/support', element: <SupportPage /> },
-  { path: '/settings', element: <SettingsPage /> },
+  { path: '/settings', element: <Settings /> },
 ];
 
 function AppRoutes() {

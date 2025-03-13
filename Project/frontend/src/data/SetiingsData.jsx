@@ -1,0 +1,128 @@
+// src/data/SetiingsData.js
+const accountSettingData = [
+    {
+      label: 'Update Profile',
+      type: 'action',
+      actionText: 'Edit',
+      function: 'updateProfile',
+      showOnMobile: true,
+      inputField: "button",
+      disabled: false,
+    },
+    {
+      label: 'Change Password',
+      type: 'action',
+      actionText: 'Change',
+      function: 'changePassword',
+      showOnMobile: true,
+      inputField: "button",
+      disabled: false,
+    },
+    {
+      label: 'Manage Subscription',
+      type: 'action',
+      actionText: 'Manage',
+      function: 'manageSubscription',
+      showOnMobile: true,
+      inputField: "button",
+      disabled: false,
+    },
+    {
+      label: 'Delete Account',
+      type: 'action',
+      actionText: 'Delete',
+      function: 'deleteAccount',
+      showOnMobile: true,
+      inputField: "button",
+      disabled: true,
+    },
+  ];
+
+//  App Preferences
+const appPreferencesData = [
+    {
+      label: 'Language',
+      type: 'select',
+      actionText: 'Edit',
+      function: 'updateLanguage',
+      showOnMobile: true,
+      inputField: "select",
+      disabled: false,
+    },
+    {
+      label: 'Notification',
+      type: 'toggle',
+      actionText: 'Edit',
+      function: 'updateNotification',
+      showOnMobile: true,
+      inputField: "toggle",
+      disabled: false,
+    },
+    {
+      label: 'Email Notification',
+      type: 'toggle',
+      actionText: 'Edit',
+        function: 'updateEmailNotification',
+      showOnMobile: true,
+      inputField: "toggle",
+      disabled: false,
+    },
+    {
+      label: 'SMS Notification',
+      type: 'toggle',
+        actionText: 'Edit',
+        function: 'updateSMSNotification',
+      showOnMobile: true,
+      inputField: "toggle",
+      disabled: false,
+    },
+    {
+      label: 'Push Notification',
+      type: 'toggle',
+        actionText: 'Edit',
+        function: 'updatePushNotification',
+      showOnMobile: true,
+      inputField: "toggle",
+      disabled: false,
+    },
+    {
+      label: 'Location',
+      type: 'select',
+      actionText: 'Edit',
+        function: 'updateLocation',
+      showOnMobile: true,
+      inputField: "select",
+      disabled: false,
+    },
+    {
+      label: 'Currency',
+      type: 'select',
+      showOnMobile: true,
+      inputField: "select",
+      disabled: false,
+    },
+    {
+      label: 'Timezone',
+      type: 'select',
+      showOnMobile: true,
+      inputField: "select",
+      disabled: false,
+    },
+    {
+      label: 'Date Format',
+      type: 'select',
+      showOnMobile: true,
+      inputField: "select",
+      disabled: false,
+    },
+    {
+      label: 'Time Format',
+      type: 'select',
+      showOnMobile: true,
+      inputField: "select",
+      disabled: false,
+    },
+  ];
+  
+ export { accountSettingData, appPreferencesData };
+  

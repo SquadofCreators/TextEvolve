@@ -1,5 +1,4 @@
 // src/components/Navbar.jsx
-
 import { useState, useRef, useEffect } from 'react';
 import {
   FiMenu,
@@ -9,7 +8,7 @@ import {
   FiUser,
   FiLogOut,
   FiMoon,
-  FiSun, // <-- Import Sun and Moon icons
+  FiSun,
 } from 'react-icons/fi';
 import { IoIosArrowDown } from "react-icons/io";
 import { navLinks } from '../data/navLinks';
@@ -25,32 +24,24 @@ function Navbar() {
   const menuRef = useRef(null);
 
   const { user, logout } = useAuth();
-  const { darkMode, toggleTheme } = useTheme(); 
+  const { darkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const toggleMenu = () => setMenuOpen(!menuOpen);
-  const toggleProfile = () => setProfileOpen(!profileOpen);
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
+  const toggleProfile = () => setProfileOpen((prev) => !prev);
 
   useEffect(() => {
-    const handleClickOutsideProfile = (e) => {
+    const handleClickOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
       }
-    };
-
-    document.addEventListener('mousedown', handleClickOutsideProfile);
-    return () => document.removeEventListener('mousedown', handleClickOutsideProfile);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutsideMenu = (e) => {
       if (menuOpen && menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutsideMenu);
-    return () => document.removeEventListener('mousedown', handleClickOutsideMenu);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
   const handleLogout = () => {
@@ -63,6 +54,9 @@ function Navbar() {
     setMenuOpen(false);
     setActiveLink('');
   };
+
+  // Call navLinks as a function, passing handleLogout if needed
+  const links = navLinks(handleLogout);
 
   return (
     <header className="sticky top-0 w-full z-50 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 shadow transition-colors">
@@ -82,9 +76,7 @@ function Navbar() {
             <input
               type="text"
               placeholder="Search documents"
-              className="w-full pl-10 pr-4 py-2 rounded-md outline-none border border-gray-300 
-                         focus:border-orange-500 bg-white text-gray-800 
-                         dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+              className="w-full pl-10 pr-4 py-2 rounded-md outline-none border border-gray-300 focus:border-orange-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
             />
           </div>
         </div>
@@ -110,22 +102,17 @@ function Navbar() {
                 <span className="font-semibold flex items-center gap-1">
                   <span className="truncate max-w-[15ch]">{user?.name}</span>
                   {profileOpen ? (
-                    <IoIosArrowDown className="inline-flex ml-1 mb-0.5 rotate-180" />
+                    <IoIosArrowDown className="inline-flex ml-1 mb-0.5 rotate-180 transition-transform" />
                   ) : (
-                    <IoIosArrowDown className="inline-flex ml-1 mb-0.5" />
+                    <IoIosArrowDown className="inline-flex ml-1 mb-0.5 transition-transform" />
                   )}
                 </span>
-                <span className="block text-xs text-gray-500">
-                  {user?.role || "User"}
-                </span>
+                <span className="block text-xs text-gray-500">{user?.role || "User"}</span>
               </div>
             </button>
 
             {profileOpen && (
-              <div
-                className="absolute overflow-hidden top-10 -right-5 mt-2 w-40 bg-gray-100 dark:bg-gray-800 
-                           rounded-md shadow-lg border border-gray-300 dark:border-gray-700 z-50"
-              >
+              <div className="absolute top-10 -right-5 mt-2 w-40 bg-gray-100 dark:bg-gray-800 rounded-md shadow-lg border border-gray-300 dark:border-gray-700 z-50">
                 <ul>
                   <li>
                     <button
@@ -136,7 +123,7 @@ function Navbar() {
                       Profile
                     </button>
                   </li>
-                  <hr className="text-gray-200 dark:text-gray-600" />
+                  <hr className="border-gray-200 dark:border-gray-600" />
                   <li>
                     <button
                       onClick={handleLogout}
@@ -161,20 +148,13 @@ function Navbar() {
       {/* Mobile Sidebar (Overlay) */}
       <div className={`fixed inset-0 z-50 ${menuOpen ? 'block' : 'hidden'}`}>
         <div className="absolute inset-0 bg-black/40" />
-
-        {/* Slide-in Menu */}
         <div
           ref={menuRef}
-          className={`absolute top-0 right-0 w-3/4 max-w-xs h-full bg-gray-100 dark:bg-gray-900 
-                      text-gray-800 dark:text-gray-100 shadow-lg transform transition-transform duration-400
-                      ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute top-0 right-0 w-3/4 max-w-xs h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 shadow-lg transform transition-transform duration-400 ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
           {/* Mobile User Info */}
           <div className="flex items-center justify-between p-4 space-x-3 border-b border-gray-300 dark:border-gray-700">
-            <div 
-              className="flex gap-3 cursor-pointer"
-              onClick={handleProfile}
-            >
+            <div className="flex gap-3 cursor-pointer" onClick={handleProfile}>
               <img
                 src={user?.avatar || "https://placehold.co/200x200?text=Te"}
                 alt="User avatar"
@@ -190,15 +170,14 @@ function Navbar() {
             </button>
           </div>
 
-          {/* Mobile Search Bar (optional) */}
+          {/* Mobile Search Bar */}
           <div className="p-4">
             <div className="relative">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search documents"
-                className="w-full pl-10 pr-4 py-2 rounded-md outline-none border border-gray-300 
-                           focus:border-orange-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+                className="w-full pl-10 pr-4 py-2 rounded-md outline-none border border-gray-300 focus:border-orange-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
               />
             </div>
           </div>
@@ -206,28 +185,68 @@ function Navbar() {
           {/* Navigation Links */}
           <nav className="p-4">
             <ul className="space-y-3">
-              {navLinks.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.link}
-                    onClick={() => {
-                      setActiveLink(link.name);
-                      setMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                  >
-                    {link.icon}
-                    <span>{link.name}</span>
-                  </Link>
-                </li>
-              ))}
+              {links.map((item) =>
+                item.showOnTop && (
+                  <li key={item.name}>
+                    <Link
+                      to={item.action}
+                      onClick={() => {
+                        setActiveLink(item.name);
+                        setMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </nav>
 
-          {/* Theme Toggle & Logout (bottom) */}
-          <div className="absolute bottom-0 w-full mt-auto p-2 border-t border-gray-300 dark:border-gray-700 space-y-2">
+          {/* Bottom Section */}
+          <div className="absolute bottom-0 w-full px-4 py-2 border-t border-gray-300 dark:border-gray-700 space-y-1">
+            {links.map((item) =>
+              item.type === "action" ? (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    if (item.name === "Logout") {
+                      handleLogout();
+                    } else {
+                      item.action && item.action();
+                    }
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                >
+                  {item.icon}
+                  <span className={item.name.toLowerCase() === "logout" ? "text-red-500 font-bold" : ""}>
+                    {item.name}
+                  </span>
+                </button>
+              ) : (
+                !item.showOnTop && (
+                  <li key={item.name}>
+                    <Link
+                      to={item.action}
+                      onClick={() => {
+                        setActiveLink(item.name);
+                        setMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </Link>
+                  </li>
+                )
+              )
+            )}
+
             {/* Theme Toggle */}
-            <button
+            {/* <button
               onClick={toggleTheme}
               className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
             >
@@ -242,16 +261,7 @@ function Navbar() {
                   Dark Mode
                 </>
               )}
-            </button>
-
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              <FiLogOut className="w-5 h-5" />
-              Logout
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
