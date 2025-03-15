@@ -55,8 +55,8 @@ function Navbar() {
     setActiveLink('');
   };
 
-  // Call navLinks as a function, passing handleLogout if needed
-  const links = navLinks(handleLogout);
+  // Call navLinks as a function (if it requires handleLogout) and filter by showOnMobile
+  const links = navLinks(handleLogout).filter(item => item.showOnMobile);
 
   return (
     <header className="sticky top-0 w-full z-50 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 shadow transition-colors">
@@ -107,7 +107,9 @@ function Navbar() {
                     <IoIosArrowDown className="inline-flex ml-1 mb-0.5 transition-transform" />
                   )}
                 </span>
-                <span className="block text-xs text-gray-500">{user?.role || "User"}</span>
+                <span className="block text-xs text-gray-500">
+                  {user?.role || "User"}
+                </span>
               </div>
             </button>
 
@@ -154,7 +156,10 @@ function Navbar() {
         >
           {/* Mobile User Info */}
           <div className="flex items-center justify-between p-4 space-x-3 border-b border-gray-300 dark:border-gray-700">
-            <div className="flex gap-3 cursor-pointer" onClick={handleProfile}>
+            <div 
+              className="flex gap-3 cursor-pointer"
+              onClick={handleProfile}
+            >
               <img
                 src={user?.avatar || "https://placehold.co/200x200?text=Te"}
                 alt="User avatar"
@@ -185,8 +190,9 @@ function Navbar() {
           {/* Navigation Links */}
           <nav className="p-4">
             <ul className="space-y-3">
-              {links.map((item) =>
-                item.showOnTop && (
+              {links
+                .filter((item) => item.showOnTop)
+                .map((item) => (
                   <li key={item.name}>
                     <Link
                       to={item.action}
@@ -200,34 +206,34 @@ function Navbar() {
                       <span>{item.name}</span>
                     </Link>
                   </li>
-                )
-              )}
+                ))}
             </ul>
           </nav>
 
           {/* Bottom Section */}
-          <div className="absolute bottom-0 w-full px-4 py-2 border-t border-gray-300 dark:border-gray-700 space-y-1">
-            {links.map((item) =>
-              item.type === "action" ? (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    if (item.name === "Logout") {
-                      handleLogout();
-                    } else {
-                      item.action && item.action();
-                    }
-                    setMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                >
-                  {item.icon}
-                  <span className={item.name.toLowerCase() === "logout" ? "text-red-500 font-bold" : ""}>
-                    {item.name}
-                  </span>
-                </button>
-              ) : (
-                !item.showOnTop && (
+          <div className="absolute bottom-0 w-full px-4 py-2 border-t border-gray-300 dark:border-gray-700 space-y-2">
+            {links
+              .filter((item) => !item.showOnTop)
+              .map((item) =>
+                item.type === "action" ? (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      if (item.name === "Logout") {
+                        handleLogout();
+                      } else {
+                        item.action && item.action();
+                      }
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    {item.icon}
+                    <span className={item.name.toLowerCase() === "logout" ? "text-red-500 font-bold" : ""}>
+                      {item.name}
+                    </span>
+                  </button>
+                ) : (
                   <li key={item.name}>
                     <Link
                       to={item.action}
@@ -242,26 +248,7 @@ function Navbar() {
                     </Link>
                   </li>
                 )
-              )
-            )}
-
-            {/* Theme Toggle */}
-            {/* <button
-              onClick={toggleTheme}
-              className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              {darkMode ? (
-                <>
-                  <FiSun className="w-5 h-5" />
-                  Light Mode
-                </>
-              ) : (
-                <>
-                  <FiMoon className="w-5 h-5" />
-                  Dark Mode
-                </>
               )}
-            </button> */}
           </div>
         </div>
       </div>

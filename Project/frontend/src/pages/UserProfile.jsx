@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { IoIosArrowBack } from "react-icons/io";
 import { Link } from 'react-router-dom';
+import PageHeader from '../components/utility/PageHeader';
 
 function UserProfile() {
   const { user } = useAuth();
@@ -27,25 +28,14 @@ function UserProfile() {
   return (
     <div>
       <div className="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg p-6 border-1 border-gray-200 dark:border-gray-700">
-        {/* Breadcrumb and Back Button */}
-        <div className="flex items-center justify-between mb-6">
-          <Link 
-            className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-orange-500 transition-colors"
-            to="/"
-          >
-            <IoIosArrowBack className="text-xl" />
-            <span className="font-medium">Back</span>
-          </Link>
-          <button 
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer"
-            onClick={handleProfileEdit}
-          >
-            Edit Profile
-          </button>
-        </div>
+        {/* Header Navigation */}
+        <PageHeader
+          title="User Profile"
+          link="/"
+        />
 
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 border-b pb-6 mb-6">
+        <div className="flex flex-col md:flex-row items-center gap-6 border-b pb-6 mb-6">
           <img
             src={user.avatar || "https://via.placeholder.com/150"}
             alt="User avatar"

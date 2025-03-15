@@ -14,6 +14,7 @@ import HistoryPage from '../pages/HistoryPage';
 import Settings from '../pages/Settings';
 import NotFound from '../pages/NotFound';
 import MainLayout from '../layouts/MainLayout';
+import Documentation from '../pages/Documentation';
 
 const protectedRoutes = [
   { path: '/', element: <LandingPage /> },
@@ -23,6 +24,7 @@ const protectedRoutes = [
   { path: '/history', element: <HistoryPage /> },
   { path: '/support', element: <SupportPage /> },
   { path: '/settings', element: <Settings /> },
+  { path: '/documentation', element: <Documentation /> },
 ];
 
 function AppRoutes() {
@@ -34,6 +36,7 @@ function AppRoutes() {
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path='/documentation' element={<Documentation />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoutes isLoggedIn={isLoggedIn} />}>

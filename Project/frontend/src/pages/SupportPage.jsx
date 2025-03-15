@@ -2,6 +2,9 @@ import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import ArticleCard from '../components/ArticleCard';
 import CategoryCard from '../components/CategoryCard';
+import { IoIosArrowBack } from "react-icons/io";
+import { Link } from 'react-router-dom';
+import PageHeader from '../components/utility/PageHeader';
 
 const SupportPage = () => {
   const { darkMode } = useTheme();
@@ -55,16 +58,17 @@ const SupportPage = () => {
 
   return (
     <div className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-lg border-1 border-gray-200 dark:border-gray-700 transition-colors rounded-xl">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Page Header */}
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-            TextEvolve Support & FAQ
-          </h1>
-          <p className="text-base sm:text-lg">
-            Find answers to questions about the application and usage that can help you convert handwritten text into digital formats. What is the purpose of life.
-          </p>
-        </header>
+
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Header Navigation */}
+        <PageHeader 
+          title="Support & FAQ" 
+          link="/" 
+          heading="Need Help?"
+          description="Find answers to your questions and get support for using TextEvolve."
+        />
+        
 
         {/* Search Bar */}
         <div className="flex justify-center mb-6">

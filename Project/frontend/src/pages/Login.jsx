@@ -7,6 +7,7 @@ import { Link as ScrollTo } from 'react-scroll';
 import { Link } from 'react-router-dom';
 import { IoArrowForward, IoEye, IoEyeOff } from "react-icons/io5";
 import { DummyUser } from '../data/DummyUser';
+import DesignedBy from '../components/DesignedBy';
 
 import BannerImg from '../assets/images/banner-bg.jpg';
 import Logo from '../assets/images/logos/tn-logo.svg';
@@ -54,9 +55,7 @@ function Login() {
 
   return (
     <div
-      className={`flex flex-col md:flex-row h-screen ${
-        darkMode ? 'bg-gray-900 text-gray-200' : 'bg-white text-gray-800'
-      }`}
+      className="flex flex-col md:flex-row h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-700"
     >
       {/* Left Section: Welcome + Image */}
       <div className="md:w-1/2 min-h-dvh md:min-h-max flex flex-col items-center justify-evenly p-4 sm:p-8 relative">
@@ -118,17 +117,17 @@ function Login() {
       </div>
 
       {/* Right Section: Login Form */}
-      <div id="login-section" className="md:w-1/2 min-h-dvh md:min-h-max flex flex-col justify-center p-4 sm:p-8 md:p-12">
+      <div id="login-section" className="relative md:w-1/2 min-h-dvh md:min-h-max flex flex-col justify-center p-4 sm:p-8 md:p-12 bg-white dark:bg-gray-800">
         <div className="max-w-md w-full mx-auto">
           <img src={Logo} alt="TextEvolve Logo" className="w-24 md:w-32 mx-auto mb-6 md:hidden" />
-          <p className="w-9/10 mx-auto flex flex-col gap-1 text-center md:text-left text-gray-500 mb-8">
-            <span className="text-gray-500 text-xl">Welcome back! 👋🏼</span>
-            <span className="text-gray-500 font-bold text-2xl">Please login to your account.</span>
+          <p className="w-9/10 mx-auto flex flex-col gap-1 text-center md:text-left text-gray-500 dark:text-gray-300 mb-8">
+            <span className="text-xl">Welcome back! 👋🏼</span>
+            <span className="font-bold text-2xl">Please login to your account.</span>
           </p>
 
           {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="space-y-5 w-9/10 mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-5 w-9/10 mx-auto text-gray-800 dark:text-gray-300">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium">
@@ -170,9 +169,9 @@ function Login() {
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <IoEyeOff className="text-gray-600 w-4 h-4 dark:text-gray-300" />
+                  <IoEyeOff className="text-gray-600 w-4 h-4 dark:text-gray-400" />
                 ) : (
-                  <IoEye className="text-gray-600 w-4 h-4 dark:text-gray-300" />
+                  <IoEye className="text-gray-600 w-4 h-4 dark:text-gray-400" />
                 )}
               </div>
             </div>
@@ -217,6 +216,9 @@ function Login() {
             </p>
           </div>
         </div>
+
+        {/* Designed by*/}
+        <DesignedBy />
       </div>
     </div>
   );
