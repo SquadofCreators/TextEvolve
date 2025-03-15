@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import PageHeader from "../components/utility/PageHeader";
 import DesignedBy from "../components/DesignedBy";
 import { FaChevronUp, FaArrowLeft } from "react-icons/fa6";
+import  TextEvolveLogo from "../assets/textevolve-logo.svg";
 
 function Documentation() {
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -41,6 +42,18 @@ function Documentation() {
         />
 
         <div className="max-w-5xl mx-auto space-y-12 bg-gray-200/60 dark:bg-gray-800 p-8 rounded-xl shadow-md">
+          {/* Logo Section */}
+          <section className="flex flex-col items-center">
+            <img 
+              src={TextEvolveLogo}
+              alt="Text Evolve Logo" 
+              className="w-32 h-32 mx-auto mb-2"
+            />
+            <h2 className="text-3xl font-bold text-gray-700 dark:text-gray-200 mb-4">
+              TextEvolve
+            </h2>
+          </section>
+
           {/* Overview Section */}
           <section>
             <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">

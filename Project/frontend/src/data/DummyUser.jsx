@@ -1,11 +1,11 @@
 // DummyUser.jsx
 export const DummyUser = {
     id: 1,
-    name: 'Gayveen Siva 123456',
+    name: 'Mr. Doggy 🐶',
     password: '123456',
     email: 'admin@gmail.com',
     role: 'government_official',
-    avatar: 'https://media.licdn.com/dms/image/v2/D5603AQHd2f2jR5-hTg/profile-displayphoto-shrink_400_400/B56ZQTDJ2vGsAg-/0/1735486383077?e=1747267200&v=beta&t=iRGRqxoK2edY_EvTayS8siPb4xjQ-FguKzMGaJ6A4E8',
+    avatar: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS2RotFggzBZjkRTgXdW1xgYWVmTNA7l8Z-8w&s',
     bio: 'Senior government official responsible for policy-making and public administration.',
     position: 'Secretary, Department of Public Administration',
     company: 'Gayernment of India',

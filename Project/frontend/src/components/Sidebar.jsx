@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './utility/ThemeToggle';
 import { navLinks } from '../data/navLinks';
 
+import TextEvolveLogo from '../assets/textevolve-logo.svg';
+
 export default function Sidebar() {
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
@@ -30,9 +32,13 @@ export default function Sidebar() {
     <aside className="hidden md:flex flex-col w-60 h-screen p-4 border-r border-gray-300/30 transition-colors bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300">
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2 mb-8">
-        <div className="p-2 rounded bg-gray-800 dark:bg-gray-700">
+        <div className="">
           <span className="flex items-center font-righteous font-bold tracking-wide text-xl text-orange-500">
-            T <span className="text-white">e</span>
+            <img 
+              src={TextEvolveLogo} 
+              alt="Text Evolve Logo" 
+              className="w-8 h-8"
+            />
           </span>
         </div>
         <div className="text-xl font-righteous font-bold tracking-widest">

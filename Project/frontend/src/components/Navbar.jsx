@@ -96,7 +96,7 @@ function Navbar() {
               <img
                 src={user?.avatar || "https://placehold.co/200x200?text=Te"}
                 alt="User avatar"
-                className="w-8 h-8 rounded-full border border-orange-500"
+                className="w-8 h-8 rounded-full border border-orange-500 object-cover"
               />
               <div className="leading-tight text-left">
                 <span className="font-semibold flex items-center gap-1">
