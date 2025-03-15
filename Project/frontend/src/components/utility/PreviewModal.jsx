@@ -67,7 +67,7 @@ const PreviewModal = ({
             <button
               onClick={onPrev}
               disabled={currentPage === 0}
-              className="flex items-center gap-2 text-orange-500 hover:underline disabled:opacity-50"
+              className="flex items-center gap-2 text-orange-500 hover:underline disabled:opacity-50 cursor-pointer"
             >
               <FiChevronLeft className="w-5 h-5" />
               Previous
@@ -78,7 +78,7 @@ const PreviewModal = ({
             <button
               onClick={onNext}
               disabled={currentPage === totalPages - 1}
-              className="flex items-center gap-2 text-orange-500 hover:underline disabled:opacity-50"
+              className="flex items-center gap-2 text-orange-500 hover:underline disabled:opacity-50 cursor-pointer"
             >
               Next
               <FiChevronRight className="w-5 h-5" />

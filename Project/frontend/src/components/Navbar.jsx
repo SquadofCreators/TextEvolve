@@ -84,7 +84,7 @@ function Navbar() {
         {/* Right Side Icons (Bell, Profile, Hamburger) */}
         <div className="flex items-center space-x-4">
           <button>
-            <FiBell className="w-5 h-5" />
+            <FiBell className="w-5 h-5 cursor-pointer" />
           </button>
 
           {/* Desktop Profile */}

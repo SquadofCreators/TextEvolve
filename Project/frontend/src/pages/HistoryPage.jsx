@@ -17,7 +17,7 @@ function HistoryPage() {
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 min-h-screen transition-colors rounded-lg">
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow-lg p-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
       <div className="mx-auto px-6 py-6">
         {/* Page Header */}
         <header className="mb-8 text-center">
