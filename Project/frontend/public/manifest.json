@@ -5,7 +5,7 @@
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#4F46E5",
+    "theme_color": "#ff6900",
     "orientation": "portrait-primary",
     "icons": [
       {
@@ -28,7 +28,7 @@
     "related_applications": [
       {
         "platform": "web",
-        "url": "https://squadofcreators.github.io/TextEvolve"
+        "url": "https://squadofcreators.github.io/TextEvolve/"
       }
     ],
     "categories": [
