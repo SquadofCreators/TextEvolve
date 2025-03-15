@@ -8,7 +8,7 @@ export const DummyUser = {
     avatar: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS2RotFggzBZjkRTgXdW1xgYWVmTNA7l8Z-8w&s',
     bio: 'Senior government official responsible for policy-making and public administration.',
     position: 'Secretary, Department of Public Administration',
-    company: 'Gayernment of India',
+    company: 'Government of India',
     location: 'New Delhi, India',
     // Security Data
     lastLogin: '2023-09-10T12:00:00Z',

@@ -10,7 +10,7 @@ import { DummyUser } from '../data/DummyUser';
 import DesignedBy from '../components/DesignedBy';
 
 import BannerImg from '../assets/images/banner-bg.jpg';
-import Logo from '../assets/images/logos/tn-logo.svg';
+import Logo from '../assets/textevolve-logo.svg';
 
 // Logos
 import TNLogo from '../assets/images/logos/tn-logo.svg';

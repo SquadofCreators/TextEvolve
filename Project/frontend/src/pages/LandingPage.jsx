@@ -182,7 +182,7 @@ function LandingPage() {
       </div>
 
       {/* Document Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1 mt-6">
+      <div className="flex flex-wrap gap-4 px-1 mt-6">
         {docData.map((data) => (
           <DocCard key={data.uniqueId} data={data} />
         ))}

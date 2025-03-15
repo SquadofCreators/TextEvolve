@@ -49,7 +49,10 @@ const Settings = () => {
           <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 transition-colors duration-200'>
             <h2 className="text-2xl font-bold mb-4">App Preferences</h2>
             {/* Theme */}
-            <ThemeToggle theme={theme} setTheme={setTheme} />
+            <div className='flex items-center justify-between w-full border-b border-gray-200 dark:border-gray-700 pb-3 mb-3'>
+              <h3 className="text-lg font-semibold mb-2">Theme</h3>
+              <ThemeToggle theme={theme} setTheme={setTheme} />
+            </div>
 
             <div className="space-y-4">
               {appPreferencesData.map((setting, index) => (

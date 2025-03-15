@@ -10,10 +10,7 @@ import { FiSun, FiMoon, FiMonitor } from 'react-icons/fi';
 function ThemeToggle({ theme, setTheme }) {
   return (
 
-    <div className="flex items-center justify-between w-full space-x-2 border-b border-gray-200 dark:border-gray-700 pb-3 mb-3">
-      <span className='text-lg text-gray-800 dark:text-gray-100'>
-        Theme
-      </span>
+    <div className="flex items-center justify-between">
       <div className="flex items-center justify-center space-x-1 border border-gray-300 dark:border-gray-700 rounded-full p-1">
         {/* Light Mode */}
         <button
