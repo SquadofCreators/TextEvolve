@@ -2,7 +2,7 @@
     "name": "TextEvolve",
     "short_name": "TextEvolve",
     "description": "Digitize handwritten and old registered documents into PDF and Word using AI and OCR.",
-    "start_url": "/",
+    "start_url": "/TextEvolve/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#ff6900",
@@ -48,7 +48,7 @@
         "sizes": "1080x1920"
       }
     ],
-    "scope": "/TextEvolve/",
+    "scope": "/",
     "id": "/"
   }
   
