@@ -11,6 +11,7 @@ import {
   FiSun,
 } from 'react-icons/fi';
 import { IoIosArrowDown } from "react-icons/io";
+import { Link } from 'react-router-dom';
 import { navLinks } from '../data/navLinks';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -64,9 +65,12 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4 md:py-3 flex items-center justify-between">
         {/* Logo (Mobile) */}
         <div className="md:hidden flex items-center space-x-2">
-          <span className="font-semibold text-xl font-righteous tracking-widest">
+          <Link 
+            className="font-semibold text-xl font-righteous tracking-widest"
+            to="/"
+          >
             <span className="text-orange-500">Text</span>Evolve
-          </span>
+          </Link>
         </div>
 
         {/* Search bar (Desktop) */}
