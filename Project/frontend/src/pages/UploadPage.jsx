@@ -50,7 +50,7 @@ function UploadPage() {
   };
 
   return (
-    <div className="min-h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-xl shadow-lg p-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
+    <div className="min-h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-xl shadow-lg p-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
       {/* Drag and Drop Area */}
       <div
         {...getRootProps()}

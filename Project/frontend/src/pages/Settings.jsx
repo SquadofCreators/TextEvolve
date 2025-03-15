@@ -19,7 +19,7 @@ const Settings = () => {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow-lg p-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
+    <div className="bg-gray-100 dark:bg-gray-900 rounded-xl shadow-lg p-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
       <div className="max-w-5xl mx-auto px-2 py-4">
         {/* Header Navigation */}
         <PageHeader 
