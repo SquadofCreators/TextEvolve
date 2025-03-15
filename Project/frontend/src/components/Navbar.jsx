@@ -11,7 +11,6 @@ import {
   FiSun,
 } from 'react-icons/fi';
 import { IoIosArrowDown } from "react-icons/io";
-import { Link } from 'react-router-dom';
 import { navLinks } from '../data/navLinks';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
