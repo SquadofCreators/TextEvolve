@@ -25,7 +25,7 @@ const docData = [
     lastModified: 'April 01, 2025, 03:45 PM',
     fileSize: '2.25 MB',
     fileType: 'PDF',
-    file: '/dummy/path/Census2018.pdf' 
+    file: 'https://picsum.photos/seed/picsum/1500/500.jpg' 
   },
   {
     uniqueId: '001237',
@@ -39,7 +39,7 @@ const docData = [
     lastModified: 'April 01, 2025, 03:45 PM',
     fileSize: '2.25 MB',
     fileType: 'PDF',
-    file: '/dummy/path/sampleImage.jpg' // <--- New file attribute (image)
+    file: 'https://picsum.photos/1500.jpg' 
   }
 ];
 

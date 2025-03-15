@@ -50,7 +50,7 @@ function UploadPage() {
   };
 
   return (
-    <div className="min-h-full bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-8 overflow-y-auto">
+    <div className="min-h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-xl shadow-lg p-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
       {/* Drag and Drop Area */}
       <div
         {...getRootProps()}
@@ -64,11 +64,11 @@ function UploadPage() {
             Drag 'n' drop some files here, or click to select files
           </p>
         )}
-      </div>
       <div className="mt-4">
         <p className="text-gray-500 dark:text-gray-400">
           Supported formats: JPG, PNG, PDF, DOCX
         </p>
+      </div>
       </div>
 
       {/* Thumbnail Preview Grid */}
