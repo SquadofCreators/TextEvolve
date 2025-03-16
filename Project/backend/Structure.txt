@@ -1,0 +1,15 @@
+project-root/
+└── backend/
+    ├── app.py              # Main Flask application, creates the app and registers blueprints
+    ├── config.py           # Centralized configuration using environment variables
+    ├── requirements.txt    # Python dependencies for the backend
+    ├── .env                # Environment file with sensitive variables (do not commit)
+    ├── uploads/            # Folder for storing uploaded files (created automatically)
+    ├── routes/             # Blueprints for modular API endpoints
+    │   ├── __init__.py     
+    │   ├── auth.py         # API endpoint(s) for authentication
+    │   └── document.py     # API endpoints for file upload, processing, and retrieval
+    └── utils/
+        ├── __init__.py     
+        └── ocr.py          # Placeholder for ML model processing (OCR logic)
+
