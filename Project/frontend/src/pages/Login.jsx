@@ -6,9 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link as ScrollTo } from 'react-scroll';
 import { Link } from 'react-router-dom';
 import { IoArrowForward, IoEye, IoEyeOff } from "react-icons/io5";
-import { DummyUser } from '../data/DummyUser';
 import DesignedBy from '../components/DesignedBy';
-
 import BannerImg from '../assets/images/banner-bg.jpg';
 import Logo from '../assets/textevolve-logo.svg';
 
@@ -28,6 +26,8 @@ export const creditsLogos = [
   { name: 'KCE', logo: KCELogo, link: 'https://www.kathir.ac.in/' },
 ];
 
+import { loginUser } from '../services/authServices';
+
 function Login() {
   const { darkMode } = useTheme();
   const navigate = useNavigate();
@@ -38,49 +38,42 @@ function Login() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Using global dummy data for validation
-  // Instead of hardcoding email/password, we use DummyUser properties:
-  // DummyUser.email === 'admin@gmail.com'
-  // DummyUser.password === '123456'
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email === DummyUser.email && password === DummyUser.password) {
-      login();
-      navigate('/');
-    } else {
-      setError('Invalid credentials');
+    setError('');
+
+    try {
+      const result = await loginUser(email, password);
+      
+      // Check if login was successful
+      if (result.success) {
+        login(result.user, result.token || 'dummyToken');
+        navigate('/');
+      } else {
+        // Use the error message from the API
+        setError(result.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   return (
-    <div
-      className="flex flex-col md:flex-row h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-700"
-    >
+    <div className="flex flex-col md:flex-row h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-700">
       {/* Left Section: Welcome + Image */}
       <div className="md:w-1/2 min-h-dvh md:min-h-max flex flex-col items-center justify-evenly p-4 sm:p-8 relative">
-        {/* Background Image */}
-        <img
-          src={BannerImg}
-          alt="Login Banner"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-
-        {/* Welcome Text */}
+        <img src={BannerImg} alt="Login Banner" className="absolute inset-0 w-full h-full object-cover" />
         <div className="relative flex flex-col items-center justify-between gap-4 z-10 text-center max-w-md">
           <div className="flex flex-col items-center justify-center gap-1">
             <img src={Logo} alt="TextEvolve Logo" className="w-24 md:w-32" />
             <h1 className="text-gray-600 text-2xl font-bold">TextEvolve</h1>
           </div>
-
           <p className="text-3xl font-bold">
             Digitize <span className="text-orange-500">History,</span> <br /> Empower the Future
           </p>
-
           <p className="mt-2 text-sm md:text-base text-gray-400">
             Access your account and continue transforming handwritten records into searchable digital formats.
           </p>
-
           <ScrollTo 
             to="login-section" 
             smooth 
@@ -90,26 +83,12 @@ function Login() {
             Get Started <IoArrowForward className="inline-block text-base ml-1 mb-0.5" />
           </ScrollTo>
         </div>
-
-        {/* Logos */}
         <div className="flex flex-col items-center justify-center z-50">
-          <p className="text-gray-500 text-xs">
-            Sponsored by
-          </p>
+          <p className="text-gray-500 text-xs">Sponsored by</p>
           <div className="flex items-center gap-6 mt-2">
             {creditsLogos.map((logo, index) => (
-              <a
-                key={index}
-                href={logo.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center"
-              >
-                <img
-                  src={logo.logo}
-                  alt={logo.name}
-                  className="w-10 h-10 md:w-12 md:h-12 cursor-pointer"
-                />
+              <a key={index} href={logo.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                <img src={logo.logo} alt={logo.name} className="w-10 h-10 md:w-12 md:h-12 cursor-pointer" />
               </a>
             ))}
           </div>
@@ -124,15 +103,11 @@ function Login() {
             <span className="text-xl">Welcome back! 👋🏼</span>
             <span className="font-bold text-2xl">Please login to your account.</span>
           </p>
-
           {error && <div className="text-red-500 text-center mb-4">{error}</div>}
-
           <form onSubmit={handleSubmit} className="space-y-5 w-9/10 mx-auto text-gray-800 dark:text-gray-300">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium">
-                Email
-              </label>
+              <label htmlFor="email" className="block text-sm font-medium">Email</label>
               <input
                 id="email"
                 type="email"
@@ -140,18 +115,14 @@ function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className={`w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                  darkMode
-                    ? 'bg-gray-800 border-gray-700 text-gray-200'
-                    : 'bg-white border-gray-300 text-gray-800'
+                  darkMode ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white border-gray-300 text-gray-800'
                 }`}
               />
             </div>
 
             {/* Password Field */}
             <div className="relative">
-              <label htmlFor="password" className="block text-sm font-medium">
-                Password
-              </label>
+              <label htmlFor="password" className="block text-sm font-medium">Password</label>
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -159,9 +130,7 @@ function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className={`w-full px-4 py-2 pr-10 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                  darkMode
-                    ? 'bg-gray-800 border-gray-700 text-gray-200'
-                    : 'bg-white border-gray-300 text-gray-800'
+                  darkMode ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white border-gray-300 text-gray-800'
                 }`}
               />
               <div 
@@ -216,8 +185,6 @@ function Login() {
             </p>
           </div>
         </div>
-
-        {/* Designed by*/}
         <DesignedBy />
       </div>
     </div>

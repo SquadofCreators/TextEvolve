@@ -25,6 +25,8 @@ export const creditsLogos = [
   { name: 'KCE', logo: KCELogo, link: 'https://www.kathir.ac.in/' },
 ];
 
+import { registerUser } from '../services/authServices';
+
 function Signup() {
   const navigate = useNavigate();
   const { signup } = useAuth();
@@ -37,28 +39,41 @@ function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
+    // Check if passwords match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-    // Replace this with your actual signup logic
-    signup();
-    navigate('/');
+
+    try {
+      const result = await registerUser(name, email, password, confirmPassword);
+      if (result.success) {
+        // After successful registration, store the user in the context
+        // Using the returned token if provided, or a fallback value.
+        signup(result.user, result.token || 'dummyToken');
+        navigate('/');
+      } else {
+        // Display the error from the API response
+        setError(result.error || 'Registration failed');
+      }
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       {/* Left Section: Welcome + Image */}
       <div className="md:w-1/2 min-h-dvh md:min-h-max flex flex-col items-center justify-evenly p-4 sm:p-8 relative">
-        {/* Background Image */}
         <img
           src={BannerImg}
           alt="Signup Banner"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Welcome Text */}
         <div className="relative flex flex-col items-center justify-between gap-4 z-10 text-center max-w-md">
           <div className="flex flex-col items-center justify-center gap-1">
             <img src={Logo} alt="TextEvolve Logo" className="w-24 md:w-32" />
@@ -79,7 +94,6 @@ function Signup() {
             Get Started <IoArrowForward className="inline-block text-base ml-1 mb-0.5" />
           </ScrollTo>
         </div>
-        {/* Sponsor Logos */}
         <div className="flex flex-col items-center justify-center z-50">
           <p className="text-gray-500 text-xs">Sponsored by</p>
           <div className="flex items-center gap-6 mt-2">
@@ -221,7 +235,6 @@ function Signup() {
           </div>
         </div>
 
-        {/* Credits */}
         <DesignedBy />
       </div>
     </div>
