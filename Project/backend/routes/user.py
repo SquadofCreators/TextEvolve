@@ -145,3 +145,50 @@ def get_profile():
         'lastLoginLocation': user.get('lastLoginLocation')
     }
     return jsonify({'success': True, 'user': user_data}), 200
+
+@user_bp.route('/register', methods=['POST'])
+def register_user():
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+    confirm_password = data.get('confirm_password')
+    
+    # Check for required fields
+    if not all([name, email, password, confirm_password]):
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+
+    # Validate password match
+    if password != confirm_password:
+        return jsonify({'success': False, 'error': 'Passwords do not match'}), 400
+
+    # Check if user already exists
+    existing_user = mongo.db.users.find_one({'email': email})
+    if existing_user:
+        return jsonify({'success': False, 'error': 'User already exists'}), 400
+
+    # Hash the password before saving
+    hashed_password = generate_password_hash(password)
+
+    # Create the new user document
+    new_user = {
+        'name': name,
+        'email': email,
+        'password': hashed_password,
+        'role': 'user',  # Set a default role, change if needed
+        # Optionally, add default values for other fields like bio, company etc.
+    }
+
+    # Insert the new user into the database
+    result = mongo.db.users.insert_one(new_user)
+    new_user['_id'] = result.inserted_id
+
+    # Prepare response data without sensitive information
+    user_data = {
+        'id': str(new_user['_id']),
+        'name': new_user.get('name'),
+        'email': new_user.get('email'),
+        'role': new_user.get('role')
+    }
+
+    return jsonify({'success': True, 'message': 'User created successfully', 'user': user_data}), 201

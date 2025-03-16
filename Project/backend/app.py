@@ -15,7 +15,7 @@ def create_app():
     mongo.init_app(app)
 
     # Enable CORS for your React frontend
-    CORS(app, origins=["http://localhost:5173"])
+    CORS(app, origins=["*"])
 
     # Live Site
     CORS(app, origins=["https://squadofcreators.github.io/TextEvolve"])
