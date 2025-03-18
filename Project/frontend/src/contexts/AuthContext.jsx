@@ -1,15 +1,24 @@
 // src/contexts/AuthContext.jsx
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  // Helper to clear stale data from sessionStorage if localStorage is used
+  useEffect(() => {
+    if (sessionStorage.getItem('token') || sessionStorage.getItem('user')) {
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      console.log('Cleared stale sessionStorage auth data');
+    }
+  }, []);
+
+  // Retrieve token from localStorage
   const token = localStorage.getItem('token');
   const [isLoggedIn, setIsLoggedIn] = useState(!!token);
   const [user, setUser] = useState(token ? JSON.parse(localStorage.getItem('user')) : null);
 
   const login = (userData, token) => {
-    // Store token and user data in local storage
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setIsLoggedIn(true);
