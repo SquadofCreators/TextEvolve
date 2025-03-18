@@ -3,38 +3,51 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext();
 
+// Helper function to determine which storage to use
+function getStorage() {
+  // Detect if app is running in standalone mode (PWA or installed)
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone;
+  return isStandalone ? localStorage : sessionStorage;
+}
+
 export function AuthProvider({ children }) {
-  // Helper to clear stale data from sessionStorage if localStorage is used
+  // Use the appropriate storage based on the environment
+  const storage = getStorage();
+
+  // Retrieve token and user data from the chosen storage
+  const token = storage.getItem('token');
+  const [isLoggedIn, setIsLoggedIn] = useState(!!token);
+  const [user, setUser] = useState(token ? JSON.parse(storage.getItem('user')) : null);
+
+  // Optional: On mount, clear any stale data if needed (for example, if switching storage methods)
   useEffect(() => {
-    if (sessionStorage.getItem('token') || sessionStorage.getItem('user')) {
+    // If switching to localStorage, you might want to remove old sessionStorage data.
+    if (storage === localStorage) {
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
-      console.log('Cleared stale sessionStorage auth data');
+      console.log('Cleared sessionStorage auth data for installed app');
     }
-  }, []);
-
-  // Retrieve token from localStorage
-  const token = localStorage.getItem('token');
-  const [isLoggedIn, setIsLoggedIn] = useState(!!token);
-  const [user, setUser] = useState(token ? JSON.parse(localStorage.getItem('user')) : null);
+  }, [storage]);
 
   const login = (userData, token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    storage.setItem('token', token);
+    storage.setItem('user', JSON.stringify(userData));
     setIsLoggedIn(true);
     setUser(userData);
   };
 
   const signup = (userData, token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    storage.setItem('token', token);
+    storage.setItem('user', JSON.stringify(userData));
     setIsLoggedIn(true);
     setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    storage.removeItem('token');
+    storage.removeItem('user');
     setIsLoggedIn(false);
     setUser(null);
   };
