@@ -8,17 +8,11 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Enable CORS if needed
+    # Enable CORS for all origins
     CORS(app)
 
     # Initialize PyMongo with the app
     mongo.init_app(app)
-
-    # Enable CORS for your React frontend
-    CORS(app, origins=["*"])
-
-    # Live Site
-    CORS(app, origins=["https://squadofcreators.github.io/TextEvolve"])
 
     # Ensure the uploads folder exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
