@@ -12,20 +12,33 @@ const PreviewModal = ({
 }) => {
   if (!isOpen || !file) return null;
 
-  // ✅ Guess file type from filename if not provided
-  const getFileType = (filename) => {
-    if (!filename) return 'unknown';
-    const ext = filename.split('.').pop().toLowerCase();
+  // ✅ Guess file type from filename or MIME type
+  const getFileType = (typeOrFilename) => {
+    if (!typeOrFilename) return 'unknown';
+
+    // Handle MIME types
+    if (typeOrFilename.startsWith('image/')) return 'image';
+    if (typeOrFilename === 'application/pdf') return 'pdf';
+    if (typeOrFilename === 'application/msword' || 
+        typeOrFilename === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      return 'doc';
+    }
+    if (typeOrFilename === 'text/plain') return 'text';
+
+    // Handle extensions
+    const ext = typeOrFilename.split('.').pop().toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) return 'image';
     if (ext === 'pdf') return 'pdf';
     if (['doc', 'docx'].includes(ext)) return 'doc';
     if (ext === 'txt') return 'text';
+
     return 'unknown';
   };
 
-  const fileType = file.type || getFileType(file.filename);
+  // ✅ Use MIME type or guess from filename
+  const fileType = getFileType(file.fileType || file.filename);
 
-  // ✅ Handle Download
+  // ✅ Handle file download
   const handleDownload = () => {
     if (file.downloadUrl) {
       const link = document.createElement('a');
@@ -39,23 +52,20 @@ const PreviewModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* 🔲 Overlay */}
+      {/* Overlay */}
       <div
         className="absolute inset-0 bg-black opacity-80"
         onClick={onClose}
       />
-      
-      {/* 🟧 Modal Container */}
-      <div className="relative z-10 bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl h-auto max-h-[90vh] overflow-hidden">
 
+      {/* Modal Container */}
+      <div className="relative z-10 bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl h-auto max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200">
-            Preview File
+            {file.title || 'Preview File'}
           </h2>
-
-          <div className='flex items-center gap-4'>
-            {/* ⬇️ Download Button */}
+          <div className="flex items-center gap-4">
             {file.downloadUrl && (
               <button
                 onClick={handleDownload}
@@ -66,21 +76,20 @@ const PreviewModal = ({
                 Download
               </button>
             )}
-
-            {/* ❌ Close Button */}
             <button
               onClick={onClose}
               title="Close Preview"
-              className="text-gray-500 mb-0.5 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1.5 transition cursor-pointer"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1.5 transition cursor-pointer"
             >
               <FiX className="w-6 h-6" />
             </button>
           </div>
         </div>
 
-        {/* 🖼️ Preview Area */}
+        {/* Preview Area */}
         <div className="p-6 flex-1 overflow-auto flex items-center justify-center">
-          {fileType !== 'image' ? (
+          {/* ✅ Handle Image */}
+          {fileType === 'image' ? (
             <img
               src={file.previewUrl}
               alt={file.filename}
@@ -90,7 +99,7 @@ const PreviewModal = ({
             <embed
               src={file.previewUrl}
               type="application/pdf"
-              className="w-full min-h-[60vh] object-contain rounded"
+              className="w-full min-h-[60vh] rounded"
             />
           ) : fileType === 'doc' ? (
             <iframe
@@ -98,7 +107,7 @@ const PreviewModal = ({
               className="w-full min-h-[60vh] rounded"
               title="Document Preview"
             />
-          ) : fileType !== 'text' ? (
+          ) : fileType === 'text' ? (
             <div className="w-full h-[60vh] p-4 overflow-y-auto bg-gray-100 dark:bg-gray-700 rounded">
               <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
                 {file.previewUrl}
@@ -113,9 +122,8 @@ const PreviewModal = ({
           )}
         </div>
 
-        {/* ⏪ Pagination & Footer */}
+        {/* Pagination & Footer */}
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          {/* Previous Button */}
           <button
             onClick={onPrev}
             disabled={currentPage === 0}
@@ -124,13 +132,9 @@ const PreviewModal = ({
             <FiChevronLeft className="w-5 h-5" />
             Previous
           </button>
-
-          {/* Pagination Status */}
           <span className="text-gray-500 dark:text-gray-400">
             Page {currentPage + 1} of {totalPages}
           </span>
-
-          {/* Next Button */}
           <button
             onClick={onNext}
             disabled={currentPage === totalPages - 1}

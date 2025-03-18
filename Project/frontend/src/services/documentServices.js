@@ -2,17 +2,15 @@ const BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 
 /**
  * Upload multiple documents.
- * @param {FileList|Array<File>} files - Files to upload.
+ * @param {FormData} formData - The FormData object containing files (and optionally a batch_id).
  * @returns {Promise<Object>} API response including batch_id and document details.
  */
-export async function uploadDocuments(files) {
+export async function uploadDocuments(formData) {
   try {
-    if (!files || files.length === 0) {
-      throw new Error("No files provided");
+    // Check if formData has at least one file under 'file'
+    if (!formData || !formData.has('file')) {
+      throw new Error("No file provided");
     }
-
-    const formData = new FormData();
-    Array.from(files).forEach(file => formData.append("file", file));
 
     const response = await fetch(`${BASE_URL}/documents/upload`, {
       method: "POST",
@@ -24,12 +22,13 @@ export async function uploadDocuments(files) {
       throw new Error(data.error || "Upload failed");
     }
 
+    // Attach preview and download URLs to each document
     return {
       ...data,
       documents: data.documents.map(doc => ({
         ...doc,
-        previewUrl: `${BASE_URL}/documents/preview/${doc.id}`, // ✅ Attach preview URL
-        downloadUrl: `${BASE_URL}/documents/download/${doc.id}` // ✅ Attach download URL
+        previewUrl: `${BASE_URL}/documents/preview/${doc.id}`,
+        downloadUrl: `${BASE_URL}/documents/download/${doc.id}`
       }))
     };
   } catch (error) {
@@ -54,7 +53,6 @@ export async function getDocument(docId) {
       throw new Error(data.error || "Failed to retrieve document");
     }
 
-    // ✅ Attach preview and download URLs
     return {
       ...data,
       previewUrl: `${BASE_URL}/documents/preview/${data.id}`,
@@ -82,7 +80,6 @@ export async function getDocumentsByBatch(batchId) {
       throw new Error(data.error || "Failed to retrieve batch documents");
     }
 
-    // ✅ Attach preview and download URLs to each document
     return {
       ...data,
       documents: data.documents.map(doc => ({
