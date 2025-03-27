@@ -185,3 +185,101 @@ def preview_document(doc_id):
         path=document['filename'],
         as_attachment=False
     )
+
+@document_bp.route('/batches', methods=['GET'])
+def get_all_batches():
+    try:
+        # Retrieve distinct batch IDs from the documents collection
+        batch_ids = mongo.db.documents.distinct("batch_id")
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving batches: {e}")
+        return jsonify({'success': False, 'error': 'Error retrieving batches'}), 400
+
+    if not batch_ids:
+        return jsonify({'success': False, 'error': 'No batches found'}), 404
+
+    batches = []
+    for batch_id in batch_ids:
+        # Retrieve all documents for this batch with full details
+        documents_cursor = mongo.db.documents.find({"batch_id": batch_id})
+        docs = []
+        created_dates = []
+        modified_dates = []
+        total_size = 0.0
+        file_types = set()
+
+        for doc in documents_cursor:
+            docs.append({
+                'id': str(doc['_id']),
+                'uniqueId': doc.get('uniqueId'),
+                'title': doc.get('title'),
+                'description': doc.get('description'),
+                'language': doc.get('language'),
+                'docType': doc.get('docType'),
+                'createdOn': doc.get('createdOn'),
+                'lastModified': doc.get('lastModified'),
+                'fileSize': doc.get('fileSize'),
+                'fileType': doc.get('fileType'),
+                'ocr_text': doc.get('ocr_text', ''),
+                'upload_date': doc['upload_date'].isoformat()
+            })
+
+            # Collect createdOn and lastModified dates if available
+            if doc.get('createdOn'):
+                try:
+                    created_dates.append(datetime.fromisoformat(doc['createdOn']))
+                except Exception:
+                    pass
+            if doc.get('lastModified'):
+                try:
+                    modified_dates.append(datetime.fromisoformat(doc['lastModified']))
+                except Exception:
+                    pass
+
+            # Sum file sizes - assuming fileSize is a string like "0.05 MB"
+            size_str = doc.get('fileSize', '0 MB')
+            try:
+                size_val = float(size_str.split()[0])
+                total_size += size_val
+            except Exception:
+                pass
+
+            # Collect unique file types
+            if doc.get('fileType'):
+                file_types.add(doc['fileType'])
+
+        # Determine batch createdOn and lastModified based on document dates
+        batch_created_on = min(created_dates).isoformat() if created_dates else None
+        batch_last_modified = max(modified_dates).isoformat() if modified_dates else None
+
+        # Build a detailed batch object
+        batch_details = {
+            'id': batch_id,
+            'name': f"Batch {batch_id[:8]}",
+            'documentCount': len(docs),
+            'createdOn': batch_created_on,
+            'lastModified': batch_last_modified,
+            'totalFileSize': f"{total_size:.2f} MB",
+            'fileTypes': list(file_types),
+            'documents': docs
+        }
+        batches.append(batch_details)
+
+    return jsonify({'success': True, 'batches': batches}), 200
+
+@document_bp.route('/batches/<batch_id>', methods=['DELETE'])
+def delete_batch(batch_id):
+    try:
+        # Delete all documents with the given batch_id
+        result = mongo.db.documents.delete_many({"batch_id": batch_id})
+    except Exception as e:
+        current_app.logger.error(f"Error deleting batch {batch_id}: {e}")
+        return jsonify({'success': False, 'error': 'Error deleting batch'}), 400
+
+    if result.deleted_count == 0:
+        return jsonify({'success': False, 'error': 'Batch not found or no documents to delete'}), 404
+
+    return jsonify({
+        'success': True,
+        'message': f'Batch {batch_id} deleted successfully, {result.deleted_count} document(s) removed.'
+    }), 200

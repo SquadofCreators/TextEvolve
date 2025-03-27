@@ -65,6 +65,36 @@ export async function getDocument(docId) {
 }
 
 /**
+ * Get all document batches.
+ * @returns {Promise<Array>} An array of detailed batch objects.
+ * Each batch object includes:
+ * - id: Batch ID.
+ * - name: A generated name (e.g. "Batch 67e514ee").
+ * - documentCount: Total number of documents in the batch.
+ * - createdOn: Earliest creation date among documents in the batch.
+ * - lastModified: Latest modification date among documents.
+ * - totalFileSize: Sum of all document file sizes (formatted as "x.xx MB").
+ * - fileTypes: An array of unique file types included in the batch.
+ * - documents: The list of documents with full details.
+ */
+export async function getAllBatches() {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/batches`, {
+      method: "GET",
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to retrieve batches");
+    }
+    // Expecting data.batches to contain the detailed batch objects from the backend.
+    return data.batches;
+  } catch (error) {
+    console.error("Get All Batches Error:", error.message);
+    throw error;
+  }
+}
+
+/**
  * Get all documents by a batch ID.
  * @param {string} batchId - The batch ID.
  * @returns {Promise<Object>} API response containing documents in the batch.
@@ -90,6 +120,28 @@ export async function getDocumentsByBatch(batchId) {
     };
   } catch (error) {
     console.error("Get Batch Documents Error:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Delete a batch by its batch ID.
+ * This deletes all documents associated with the given batch.
+ * @param {string} batchId - The batch ID.
+ * @returns {Promise<Object>} API response with deletion details.
+ */
+export async function deleteBatch(batchId) {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/batches/${batchId}`, {
+      method: "DELETE",
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to delete batch");
+    }
+    return data;
+  } catch (error) {
+    console.error("Delete Batch Error:", error.message);
     throw error;
   }
 }

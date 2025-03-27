@@ -62,7 +62,7 @@ const PreviewModal = ({
       <div className="relative z-10 bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl h-auto max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200">
+          <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200 line-clamp-1">
             {file.title || 'Preview File'}
           </h2>
           <div className="flex items-center gap-4">

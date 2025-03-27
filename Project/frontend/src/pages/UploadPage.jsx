@@ -2,7 +2,7 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import PreviewModal from '../components/utility/PreviewModal';
 import { uploadDocuments } from '../services/documentServices';
-import { FiUpload, FiTrash, FiImage, FiFileText, FiFile } from 'react-icons/fi';
+import { FiTrash, FiImage, FiFileText, FiFile } from 'react-icons/fi';
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
 
 function UploadPage() {
@@ -15,6 +15,26 @@ function UploadPage() {
   const [showDropzone, setShowDropzone] = useState(true);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const docsPerPage = 2;
+
+  // Helper: Rename file title in local state
+  const renameFile = (index, newName) => {
+    setFiles((prev) => {
+      const updated = [...prev];
+      updated[index].title = newName;
+      return updated;
+    });
+  };
+
+  // Modal navigation functions
+  const prevFile = () =>
+    setPreviewModalIndex((i) => (i > 0 ? i - 1 : i));
+  const nextFile = () =>
+    setPreviewModalIndex((i) => (i < uploadedFiles.length - 1 ? i + 1 : i));
+
+  // Calculate pagination data
+  const totalPages = Math.ceil(uploadedFiles.length / docsPerPage);
+  const startIndex = currentPageIndex * docsPerPage;
+  const paginatedDocs = uploadedFiles.slice(startIndex, startIndex + docsPerPage);
 
   // Helper: Get file type icon based on MIME type
   const getFileTypeIcon = (type) => {
@@ -29,7 +49,7 @@ function UploadPage() {
   const onDrop = useCallback((acceptedFiles) => {
     console.log("Files dropped:", acceptedFiles);
     const mappedFiles = acceptedFiles.map((file) => ({
-      file, // Preserve the original File object
+      file, // original File object
       preview: URL.createObjectURL(file),
       title: file.name,
       size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
@@ -60,15 +80,6 @@ function UploadPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Rename file title
-  const renameFile = (index, newName) => {
-    setFiles((prev) => {
-      const updated = [...prev];
-      updated[index].title = newName;
-      return updated;
-    });
-  };
-
   // Handle file upload: build FormData and pass to service
   const handleUpload = async () => {
     if (files.length === 0) {
@@ -85,14 +96,14 @@ function UploadPage() {
 
     // Debug: log FormData entries (file content will not be printed)
     for (let pair of formData.entries()) {
-      console.log(pair[0] + ', ', pair[1]);
+      console.log(pair[0] + ': ', pair[1]);
     }
 
     try {
       const result = await uploadDocuments(formData);
       setBatchId(result.batch_id);
       setUploadedFiles((prev) => [...prev, ...result.documents]);
-      setFiles([]); // Clear selected files after successful upload
+      setFiles([]); // Clear selected files after upload
       setUploadStatus(`Upload successful. Batch ID: ${result.batch_id}`);
       setShowDropzone(false);
       setCurrentPageIndex(0);
@@ -113,16 +124,6 @@ function UploadPage() {
     setShowDropzone(true);
     setCurrentPageIndex(0);
   };
-
-  // Pagination: calculate pages for uploaded documents
-  const totalPages = Math.ceil(uploadedFiles.length / docsPerPage);
-  const startIndex = currentPageIndex * docsPerPage;
-  const paginatedDocs = uploadedFiles.slice(startIndex, startIndex + docsPerPage);
-
-  // Modal navigation handlers
-  const closeModal = () => setPreviewModalIndex(null);
-  const prevFile = () => setPreviewModalIndex((i) => (i > 0 ? i - 1 : i));
-  const nextFile = () => setPreviewModalIndex((i) => (i < uploadedFiles.length - 1 ? i + 1 : i));
 
   return (
     <div className="h-full bg-gray-100 dark:bg-gray-900 py-6 px-4">
@@ -254,16 +255,16 @@ function UploadPage() {
                 <button
                   onClick={() => setCurrentPageIndex((prev) => Math.max(prev - 1, 0))}
                   disabled={currentPageIndex === 0}
-                  className="px-4 py-2 text-gray-700 hover:text-white disabled:hover:text-gray-700 bg-gray-300 hover:bg-orange-500 disabled:hover:bg-gray-300 rounded disabled:opacity-50 cursor-pointer disabled:cursor-no-drop"
+                  className="px-4 py-2 text-gray-700 hover:text-white bg-gray-300 hover:bg-orange-500 disabled:opacity-50 cursor-pointer disabled:cursor-no-drop rounded"
                 >
-                  <FaAngleLeft className='inline-flex mb-0.5' /> Previous
+                  <FaAngleLeft className="inline-flex mb-0.5" /> Previous
                 </button>
                 <button
                   onClick={() => setCurrentPageIndex((prev) => Math.min(prev + 1, totalPages - 1))}
                   disabled={currentPageIndex === totalPages - 1}
-                  className="px-4 py-2 text-gray-700 hover:text-white disabled:hover:text-gray-700 bg-gray-300 hover:bg-orange-500 disabled:hover:bg-gray-300 rounded disabled:opacity-50 cursor-pointer disabled:cursor-no-drop"
+                  className="px-4 py-2 text-gray-700 hover:text-white bg-gray-300 hover:bg-orange-500 disabled:opacity-50 cursor-pointer disabled:cursor-no-drop rounded"
                 >
-                  Next <FaAngleRight className='inline-flex mb-0.5' />
+                  Next <FaAngleRight className="inline-flex mb-0.5" />
                 </button>
               </div>
             )}
