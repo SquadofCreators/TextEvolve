@@ -1,285 +1,247 @@
 import os
+import zipfile
+import base64
+from io import BytesIO
 from datetime import datetime
-from flask import Blueprint, request, jsonify, current_app, send_from_directory
+from flask import Blueprint, request, jsonify, current_app, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 from bson import ObjectId
-from utils.ocr import run_ocr_model
-from db_ext import mongo  # Import shared instance
+from db_ext import mongo  # shared Mongo instance
+
+# If you plan to use OCR processing, uncomment the line below:
+# from utils.ocr import run_ocr_model
+
+# For PDF preview generation, ensure you have pdf2image installed and poppler available.
+# pip install pdf2image
+from pdf2image import convert_from_path
 
 document_bp = Blueprint('document', __name__)
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-@document_bp.route('/upload', methods=['POST'])
-def upload_document():
-    files = request.files.getlist('file')
-    # Optional: Append files to an existing batch if batch_id is provided
-    batch_id = request.form.get('batch_id')
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpeg', 'jpg', 'doc', 'docx'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-    if not files or len(files) == 0:
-        return jsonify({'success': False, 'error': 'No file provided'}), 400
+def create_batch_record(batch_name, documents):
+    total_file_size = sum(doc['file_size'] for doc in documents)
+    file_types = list(set(doc['file_type'] for doc in documents))
+    now = datetime.utcnow()
+    batch = {
+        "name": batch_name,
+        "created_on": now,
+        "modified_on": now,
+        "total_file_size": total_file_size,
+        "total_files": len(documents),
+        "file_types": file_types,
+        "documents": documents
+    }
+    return batch
 
-    if not batch_id:
-        batch_id = str(ObjectId())
+# --------------------------------------------
+# API Endpoints
+# --------------------------------------------
 
+# Upload New Batch (Documents)
+@document_bp.route('/upload_batch', methods=['POST'])
+def upload_batch():
+    if 'files' not in request.files:
+        return jsonify({"error": "No files part in the request"}), 400
+
+    files = request.files.getlist('files')
+    batch_name = request.form.get('name', 'Untitled Batch')
     documents = []
-    
-    for index, file in enumerate(files):
-        if file.filename == '':
-            continue
 
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-        try:
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
             file.save(file_path)
-        except Exception as e:
-            current_app.logger.error(f"Error saving file {filename}: {e}")
-            continue
+            file_size = os.path.getsize(file_path)
+            file_type = filename.rsplit('.', 1)[1].lower()
+            now = datetime.utcnow()
 
-        try:
-            ocr_result = run_ocr_model(file_path)
-        except Exception as e:
-            current_app.logger.error(f"OCR failed for file {filename}: {e}")
-            ocr_result = ""
+            # Optionally, you can run OCR processing here if needed:
+            # extracted_content = run_ocr_model(file_path)
+            extracted_content = ""
 
-        file_size = round(os.path.getsize(file_path) / (1024 * 1024), 2)  # in MB
+            doc_record = {
+                "id": str(ObjectId()),
+                "name": filename,
+                "file_size": file_size,
+                "uploaded_on": now,
+                "file_type": file_type,
+                "title": request.form.get('title', filename),
+                "extracted_content": extracted_content,
+                "detected_language": "",
+                "file_path": file_path  # store path for later downloads or preview
+            }
+            documents.append(doc_record)
+        else:
+            return jsonify({"error": "File type not allowed or file missing"}), 400
 
-        document_data = {
-            "uniqueId": f"00123{index + 1}",
-            "title": file.filename,
-            "description": f"Digitized document - {file.filename}",
-            "language": "English",
-            "docType": file.mimetype,
-            "createdOn": datetime.utcnow().isoformat(),
-            "lastModified": datetime.utcnow().isoformat(),
-            "fileSize": f"{file_size} MB",
-            "fileType": file.mimetype,
-            "filename": filename,
-            "file_path": file_path,
-            "ocr_text": ocr_result,
-            "upload_date": datetime.utcnow(),
-            "batch_id": batch_id
-        }
+    batch = create_batch_record(batch_name, documents)
+    result = mongo.db.batches.insert_one(batch)
+    batch['_id'] = str(result.inserted_id)
+    return jsonify(batch), 201
 
-        try:
-            result = mongo.db.documents.insert_one(document_data)
-            document_id = str(result.inserted_id)
-        except Exception as e:
-            current_app.logger.error(f"DB insert failed for file {filename}: {e}")
-            continue
+# Get Specific Batch by Batch ID
+@document_bp.route('/get_batch/<batch_id>', methods=['GET'])
+def get_batch(batch_id):
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if batch:
+        batch['_id'] = str(batch['_id'])
+        return jsonify(batch), 200
+    return jsonify({"error": "Batch not found"}), 404
 
-        # Build a public preview URL (adjust if needed)
-        documents.append({
-            'id': document_id,
-            'uniqueId': document_data['uniqueId'],
-            'title': document_data['title'],
-            'description': document_data['description'],
-            'language': document_data['language'],
-            'docType': document_data['docType'],
-            'createdOn': document_data['createdOn'],
-            'lastModified': document_data['lastModified'],
-            'fileSize': document_data['fileSize'],
-            'fileType': document_data['fileType'],
-            'preview': f"{request.host_url}documents/preview/{document_id}"
-        })
-
-    if not documents:
-        return jsonify({'success': False, 'error': 'No valid file uploaded'}), 400
-
-    return jsonify({
-        'success': True,
-        'message': 'Files uploaded and processed successfully',
-        'batch_id': batch_id,
-        'documents': documents
-    }), 200
-
-@document_bp.route('/<doc_id>', methods=['GET'])
-def get_document(doc_id):
-    try:
-        document = mongo.db.documents.find_one({"_id": ObjectId(doc_id)})
-    except Exception as e:
-        current_app.logger.error(f"Error retrieving document with id {doc_id}: {e}")
-        return jsonify({'success': False, 'error': 'Invalid document ID'}), 400
-
-    if not document:
-        return jsonify({'success': False, 'error': 'Document not found'}), 404
-
-    return jsonify({
-        'success': True,
-        'id': str(document['_id']),
-        'uniqueId': document.get('uniqueId'),
-        'title': document.get('title'),
-        'description': document.get('description'),
-        'language': document.get('language'),
-        'docType': document.get('docType'),
-        'createdOn': document.get('createdOn'),
-        'lastModified': document.get('lastModified'),
-        'fileSize': document.get('fileSize'),
-        'fileType': document.get('fileType'),
-        'ocr_text': document.get('ocr_text', ''),
-        'upload_date': document['upload_date'].isoformat()
-    }), 200
-
-@document_bp.route('/batch/<batch_id>', methods=['GET'])
-def get_documents_by_batch(batch_id):
-    try:
-        documents_cursor = mongo.db.documents.find({"batch_id": batch_id})
-    except Exception as e:
-        current_app.logger.error(f"Error querying database for batch {batch_id}: {e}")
-        return jsonify({'success': False, 'error': 'Invalid batch ID'}), 400
-
-    documents = list(documents_cursor)
-    if not documents:
-        return jsonify({'success': False, 'error': 'No documents found for this batch ID'}), 404
-
-    docs = []
-    for doc in documents:
-        docs.append({
-            'id': str(doc['_id']),
-            'uniqueId': doc.get('uniqueId'),
-            'title': doc.get('title'),
-            'description': doc.get('description'),
-            'language': doc.get('language'),
-            'docType': doc.get('docType'),
-            'createdOn': doc.get('createdOn'),
-            'lastModified': doc.get('lastModified'),
-            'fileSize': doc.get('fileSize'),
-            'fileType': doc.get('fileType'),
-            'ocr_text': doc.get('ocr_text', ''),
-            'upload_date': doc['upload_date'].isoformat()
-        })
-    return jsonify({
-        'success': True,
-        'batch_id': batch_id,
-        'documents': docs
-    }), 200
-
-@document_bp.route('/download/<doc_id>', methods=['GET'])
-def download_document(doc_id):
-    try:
-        document = mongo.db.documents.find_one({"_id": ObjectId(doc_id)})
-    except Exception as e:
-        current_app.logger.error(f"Error retrieving document for download with id {doc_id}: {e}")
-        return jsonify({'success': False, 'error': 'Invalid document ID'}), 400
-
-    if not document:
-        return jsonify({'success': False, 'error': 'Document not found'}), 404
-
-    return send_from_directory(
-        directory=current_app.config['UPLOAD_FOLDER'],
-        path=document['filename'],
-        as_attachment=True
-    )
-
-@document_bp.route('/preview/<doc_id>', methods=['GET'])
-def preview_document(doc_id):
-    try:
-        document = mongo.db.documents.find_one({"_id": ObjectId(doc_id)})
-    except Exception as e:
-        current_app.logger.error(f"Error retrieving document for preview with id {doc_id}: {e}")
-        return jsonify({'success': False, 'error': 'Invalid document ID'}), 400
-
-    if not document:
-        return jsonify({'success': False, 'error': 'Document not found'}), 404
-
-    return send_from_directory(
-        directory=current_app.config['UPLOAD_FOLDER'],
-        path=document['filename'],
-        as_attachment=False
-    )
-
-@document_bp.route('/batches', methods=['GET'])
+# Get All Batches
+@document_bp.route('/get_all_batches', methods=['GET'])
 def get_all_batches():
-    try:
-        # Retrieve distinct batch IDs from the documents collection
-        batch_ids = mongo.db.documents.distinct("batch_id")
-    except Exception as e:
-        current_app.logger.error(f"Error retrieving batches: {e}")
-        return jsonify({'success': False, 'error': 'Error retrieving batches'}), 400
+    batches = mongo.db.batches.find()
+    result = []
+    for batch in batches:
+        batch['_id'] = str(batch['_id'])
+        result.append(batch)
+    return jsonify(result), 200
 
-    if not batch_ids:
-        return jsonify({'success': False, 'error': 'No batches found'}), 404
+# Batch Documents Preview by Batch ID (metadata for all docs)
+@document_bp.route('/preview_batch_documents/<batch_id>', methods=['GET'])
+def preview_batch_documents(batch_id):
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if batch:
+        docs_preview = [
+            {
+                "id": doc["id"],
+                "name": doc["name"],
+                "file_size": doc["file_size"],
+                "uploaded_on": doc["uploaded_on"],
+                "file_type": doc["file_type"],
+                "title": doc.get("title", ""),
+                "extracted_content": doc.get("extracted_content", ""),
+                "detected_language": doc.get("detected_language", "")
+            } for doc in batch.get("documents", [])
+        ]
+        return jsonify(docs_preview), 200
+    return jsonify({"error": "Batch not found"}), 404
 
-    batches = []
-    for batch_id in batch_ids:
-        # Retrieve all documents for this batch with full details
-        documents_cursor = mongo.db.documents.find({"batch_id": batch_id})
-        docs = []
-        created_dates = []
-        modified_dates = []
-        total_size = 0.0
-        file_types = set()
+# Batch Documents Download by Batch ID (zips all files)
+@document_bp.route('/download_batch_documents/<batch_id>', methods=['GET'])
+def download_batch_documents(batch_id):
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if not batch:
+        return jsonify({"error": "Batch not found"}), 404
 
-        for doc in documents_cursor:
-            docs.append({
-                'id': str(doc['_id']),
-                'uniqueId': doc.get('uniqueId'),
-                'title': doc.get('title'),
-                'description': doc.get('description'),
-                'language': doc.get('language'),
-                'docType': doc.get('docType'),
-                'createdOn': doc.get('createdOn'),
-                'lastModified': doc.get('lastModified'),
-                'fileSize': doc.get('fileSize'),
-                'fileType': doc.get('fileType'),
-                'ocr_text': doc.get('ocr_text', ''),
-                'upload_date': doc['upload_date'].isoformat()
-            })
+    memory_file = BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for doc in batch.get("documents", []):
+            file_path = doc.get("file_path")
+            if file_path and os.path.exists(file_path):
+                zf.write(file_path, arcname=os.path.basename(file_path))
+    memory_file.seek(0)
+    return send_file(memory_file, download_name=f'batch_{batch_id}.zip', as_attachment=True)
 
-            # Collect createdOn and lastModified dates if available
-            if doc.get('createdOn'):
-                try:
-                    created_dates.append(datetime.fromisoformat(doc['createdOn']))
-                except Exception:
-                    pass
-            if doc.get('lastModified'):
-                try:
-                    modified_dates.append(datetime.fromisoformat(doc['lastModified']))
-                except Exception:
-                    pass
-
-            # Sum file sizes - assuming fileSize is a string like "0.05 MB"
-            size_str = doc.get('fileSize', '0 MB')
-            try:
-                size_val = float(size_str.split()[0])
-                total_size += size_val
-            except Exception:
-                pass
-
-            # Collect unique file types
-            if doc.get('fileType'):
-                file_types.add(doc['fileType'])
-
-        # Determine batch createdOn and lastModified based on document dates
-        batch_created_on = min(created_dates).isoformat() if created_dates else None
-        batch_last_modified = max(modified_dates).isoformat() if modified_dates else None
-
-        # Build a detailed batch object
-        batch_details = {
-            'id': batch_id,
-            'name': f"Batch {batch_id[:8]}",
-            'documentCount': len(docs),
-            'createdOn': batch_created_on,
-            'lastModified': batch_last_modified,
-            'totalFileSize': f"{total_size:.2f} MB",
-            'fileTypes': list(file_types),
-            'documents': docs
-        }
-        batches.append(batch_details)
-
-    return jsonify({'success': True, 'batches': batches}), 200
-
-@document_bp.route('/batches/<batch_id>', methods=['DELETE'])
+# Delete Single Batch by Batch ID
+@document_bp.route('/delete_batch/<batch_id>', methods=['DELETE'])
 def delete_batch(batch_id):
-    try:
-        # Delete all documents with the given batch_id
-        result = mongo.db.documents.delete_many({"batch_id": batch_id})
-    except Exception as e:
-        current_app.logger.error(f"Error deleting batch {batch_id}: {e}")
-        return jsonify({'success': False, 'error': 'Error deleting batch'}), 400
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if not batch:
+        return jsonify({"error": "Batch not found"}), 404
 
-    if result.deleted_count == 0:
-        return jsonify({'success': False, 'error': 'Batch not found or no documents to delete'}), 404
+    # Remove files from disk
+    for doc in batch.get("documents", []):
+        file_path = doc.get("file_path")
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
 
-    return jsonify({
-        'success': True,
-        'message': f'Batch {batch_id} deleted successfully, {result.deleted_count} document(s) removed.'
-    }), 200
+    mongo.db.batches.delete_one({"_id": ObjectId(batch_id)})
+    return jsonify({"message": "Batch deleted"}), 200
+
+# Delete All Batches
+@document_bp.route('/delete_all_batches', methods=['DELETE'])
+def delete_all_batches():
+    batches = mongo.db.batches.find()
+    for batch in batches:
+        for doc in batch.get("documents", []):
+            file_path = doc.get("file_path")
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
+    mongo.db.batches.delete_many({})
+    return jsonify({"message": "All batches deleted"}), 200
+
+# Delete Single Document by Batch ID and Document ID
+@document_bp.route('/delete_document/<batch_id>/<doc_id>', methods=['DELETE'])
+def delete_document(batch_id, doc_id):
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if not batch:
+        return jsonify({"error": "Batch not found"}), 404
+
+    updated_docs = []
+    doc_found = False
+    for doc in batch.get("documents", []):
+        if doc["id"] == doc_id:
+            file_path = doc.get("file_path")
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
+            doc_found = True
+        else:
+            updated_docs.append(doc)
+
+    if not doc_found:
+        return jsonify({"error": "Document not found in batch"}), 404
+
+    # Update the batch with the remaining documents and update modified_on timestamp.
+    mongo.db.batches.update_one(
+        {"_id": ObjectId(batch_id)},
+        {"$set": {"documents": updated_docs, "modified_on": datetime.utcnow()}}
+    )
+    return jsonify({"message": "Document deleted successfully"}), 200
+
+
+# Get Single Document from Specific Batch by Document ID
+@document_bp.route('/get_document/<batch_id>/<doc_id>', methods=['GET'])
+def get_document(batch_id, doc_id):
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if batch:
+        for doc in batch.get("documents", []):
+            if doc["id"] == doc_id:
+                return jsonify(doc), 200
+        return jsonify({"error": "Document not found in batch"}), 404
+    return jsonify({"error": "Batch not found"}), 404
+
+# Document Preview from Specific Batch by Document ID – now using uploaded document for preview
+@document_bp.route('/preview_document/<batch_id>/<doc_id>', methods=['GET'])
+def preview_document(batch_id, doc_id):
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if not batch:
+        return jsonify({"error": "Batch not found"}), 404
+    for doc in batch.get("documents", []):
+        if doc["id"] == doc_id:
+            file_path = doc.get("file_path")
+            if not file_path or not os.path.exists(file_path):
+                return jsonify({"error": "File not found on disk"}), 404
+            directory = os.path.dirname(file_path)
+            filename = os.path.basename(file_path)
+            # Serve file inline (so browser can preview)
+            return send_from_directory(directory, filename, as_attachment=False)
+    return jsonify({"error": "Document not found in batch"}), 404
+
+
+# Document Download from Specific Batch by Document ID
+@document_bp.route('/download_document/<batch_id>/<doc_id>', methods=['GET'])
+def download_document(batch_id, doc_id):
+    batch = mongo.db.batches.find_one({"_id": ObjectId(batch_id)})
+    if batch:
+        for doc in batch.get("documents", []):
+            if doc["id"] == doc_id:
+                file_path = doc.get("file_path")
+                if file_path and os.path.exists(file_path):
+                    directory = os.path.dirname(file_path)
+                    filename = os.path.basename(file_path)
+                    # Check for query parameter "inline". If inline=true, serve file inline.
+                    inline = request.args.get("inline", "false").lower() == "true"
+                    return send_from_directory(directory, filename, as_attachment=not inline)
+                else:
+                    return jsonify({"error": "File not found on disk"}), 404
+        return jsonify({"error": "Document not found in batch"}), 404
+    return jsonify({"error": "Batch not found"}), 404

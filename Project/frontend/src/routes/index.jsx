@@ -15,6 +15,8 @@ import Settings from '../pages/Settings';
 import NotFound from '../pages/NotFound';
 import MainLayout from '../layouts/MainLayout';
 import Documentation from '../pages/Documentation';
+import BatchDetails from '../pages/BatchDetails';
+import ExtractTextPage from '../pages/ExtractTextPage';
 
 const protectedRoutes = [
   { path: '/', element: <LandingPage /> },
@@ -25,6 +27,8 @@ const protectedRoutes = [
   { path: '/support', element: <SupportPage /> },
   { path: '/settings', element: <Settings /> },
   { path: '/documentation', element: <Documentation /> },
+  { path: '/batch/:batchId', element: <BatchDetails /> },
+  { path: '/extract-text/:batchId', element: <ExtractTextPage /> },
 ];
 
 function AppRoutes() {

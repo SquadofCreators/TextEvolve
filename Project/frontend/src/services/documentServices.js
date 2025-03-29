@@ -1,36 +1,24 @@
 const BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 
 /**
- * Upload multiple documents.
- * @param {FormData} formData - The FormData object containing files (and optionally a batch_id).
- * @returns {Promise<Object>} API response including batch_id and document details.
+ * Upload a new batch of documents.
+ * @param {FormData} formData - Must contain files under key 'files'.
+ * @returns {Promise<Object>} The uploaded batch data.
  */
 export async function uploadDocuments(formData) {
   try {
-    // Check if formData has at least one file under 'file'
-    if (!formData || !formData.has('file')) {
+    if (!formData || !formData.has("files")) {
       throw new Error("No file provided");
     }
-
-    const response = await fetch(`${BASE_URL}/documents/upload`, {
+    const response = await fetch(`${BASE_URL}/documents/upload_batch`, {
       method: "POST",
       body: formData,
     });
-
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Upload failed");
     }
-
-    // Attach preview and download URLs to each document
-    return {
-      ...data,
-      documents: data.documents.map(doc => ({
-        ...doc,
-        previewUrl: `${BASE_URL}/documents/preview/${doc.id}`,
-        downloadUrl: `${BASE_URL}/documents/download/${doc.id}`
-      }))
-    };
+    return data;
   } catch (error) {
     console.error("Upload error:", error.message);
     throw error;
@@ -38,101 +26,96 @@ export async function uploadDocuments(formData) {
 }
 
 /**
- * Get a single document by its ID.
- * @param {string} docId - The document ID.
- * @returns {Promise<Object>} The document data.
+ * Retrieve a specific batch by its ID.
+ * @param {string} batchId 
+ * @returns {Promise<Object>} Batch data.
  */
-export async function getDocument(docId) {
+export async function getBatch(batchId) {
   try {
-    const response = await fetch(`${BASE_URL}/documents/${docId}`, {
+    const response = await fetch(`${BASE_URL}/documents/get_batch/${batchId}`, {
       method: "GET",
     });
-
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Failed to retrieve document");
+      throw new Error(data.error || "Failed to retrieve batch");
     }
-
-    return {
-      ...data,
-      previewUrl: `${BASE_URL}/documents/preview/${data.id}`,
-      downloadUrl: `${BASE_URL}/documents/download/${data.id}`
-    };
+    return data;
   } catch (error) {
-    console.error("Get Document Error:", error.message);
+    console.error("Get Batch error:", error.message);
     throw error;
   }
 }
 
 /**
- * Get all document batches.
- * @returns {Promise<Array>} An array of detailed batch objects.
- * Each batch object includes:
- * - id: Batch ID.
- * - name: A generated name (e.g. "Batch 67e514ee").
- * - documentCount: Total number of documents in the batch.
- * - createdOn: Earliest creation date among documents in the batch.
- * - lastModified: Latest modification date among documents.
- * - totalFileSize: Sum of all document file sizes (formatted as "x.xx MB").
- * - fileTypes: An array of unique file types included in the batch.
- * - documents: The list of documents with full details.
+ * Retrieve all batches.
+ * @returns {Promise<Array>} Array of batches.
  */
 export async function getAllBatches() {
   try {
-    const response = await fetch(`${BASE_URL}/documents/batches`, {
+    const response = await fetch(`${BASE_URL}/documents/get_all_batches`, {
       method: "GET",
     });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Failed to retrieve batches");
     }
-    // Expecting data.batches to contain the detailed batch objects from the backend.
-    return data.batches;
+    return data;
   } catch (error) {
-    console.error("Get All Batches Error:", error.message);
+    console.error("Get All Batches error:", error.message);
     throw error;
   }
 }
 
 /**
- * Get all documents by a batch ID.
- * @param {string} batchId - The batch ID.
- * @returns {Promise<Object>} API response containing documents in the batch.
+ * Retrieve a preview (metadata) for all documents in a batch.
+ * @param {string} batchId 
+ * @returns {Promise<Array>} Array of document metadata.
  */
-export async function getDocumentsByBatch(batchId) {
+export async function previewBatchDocuments(batchId) {
   try {
-    const response = await fetch(`${BASE_URL}/documents/batch/${batchId}`, {
+    const response = await fetch(`${BASE_URL}/documents/preview_batch_documents/${batchId}`, {
       method: "GET",
     });
-
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Failed to retrieve batch documents");
+      throw new Error(data.error || "Failed to preview batch documents");
     }
-
-    return {
-      ...data,
-      documents: data.documents.map(doc => ({
-        ...doc,
-        previewUrl: `${BASE_URL}/documents/preview/${doc.id}`,
-        downloadUrl: `${BASE_URL}/documents/download/${doc.id}`
-      }))
-    };
+    return data;
   } catch (error) {
-    console.error("Get Batch Documents Error:", error.message);
+    console.error("Preview Batch Documents error:", error.message);
     throw error;
   }
 }
 
 /**
- * Delete a batch by its batch ID.
- * This deletes all documents associated with the given batch.
- * @param {string} batchId - The batch ID.
- * @returns {Promise<Object>} API response with deletion details.
+ * Download all documents in a batch as a zip file.
+ * @param {string} batchId 
+ * @returns {Promise<Blob>} Blob of the zip file.
+ */
+export async function downloadBatchDocuments(batchId) {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/download_batch_documents/${batchId}`, {
+      method: "GET",
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to download batch documents");
+    }
+    return await response.blob();
+  } catch (error) {
+    console.error("Download Batch Documents error:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Delete a single batch by its ID.
+ * @param {string} batchId 
+ * @returns {Promise<Object>} Deletion response.
  */
 export async function deleteBatch(batchId) {
   try {
-    const response = await fetch(`${BASE_URL}/documents/batches/${batchId}`, {
+    const response = await fetch(`${BASE_URL}/documents/delete_batch/${batchId}`, {
       method: "DELETE",
     });
     const data = await response.json();
@@ -141,25 +124,136 @@ export async function deleteBatch(batchId) {
     }
     return data;
   } catch (error) {
-    console.error("Delete Batch Error:", error.message);
+    console.error("Delete Batch error:", error.message);
     throw error;
   }
 }
 
 /**
- * Get the download URL for a document.
- * @param {string} docId - The document ID.
- * @returns {string} The download URL.
+ * Delete all batches.
+ * @returns {Promise<Object>} Deletion response.
  */
-export function getDownloadURL(docId) {
-  return `${BASE_URL}/documents/download/${docId}`;
+export async function deleteAllBatches() {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/delete_all_batches`, {
+      method: "DELETE",
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to delete all batches");
+    }
+    return data;
+  } catch (error) {
+    console.error("Delete All Batches error:", error.message);
+    throw error;
+  }
 }
 
 /**
- * Get the preview URL for a document.
- * @param {string} docId - The document ID.
- * @returns {string} The preview URL.
+ * Retrieve a single document from a batch.
+ * @param {string} batchId 
+ * @param {string} docId 
+ * @returns {Promise<Object>} Document data.
  */
-export function getPreviewURL(docId) {
-  return `${BASE_URL}/documents/preview/${docId}`;
+export async function getDocument(batchId, docId) {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/get_document/${batchId}/${docId}`, {
+      method: "GET",
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to get document");
+    }
+    return data;
+  } catch (error) {
+    console.error("Get Document error:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Retrieve a preview URL of a single document.
+ * The backend now returns only the preview_url (pointing to the uploaded document served inline).
+ * @param {string} batchId 
+ * @param {string} docId 
+ * @returns {Promise<Object>} An object with the preview_url.
+ */
+export async function previewDocument(batchId, docId) {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/preview_document/${batchId}/${docId}`, {
+      method: "GET",
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to preview document");
+    }
+    return data;
+  } catch (error) {
+    console.error("Preview Document error:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Download a single document.
+ * @param {string} batchId 
+ * @param {string} docId 
+ * @returns {Promise<Blob>} Blob of the document file.
+ */
+export async function downloadDocument(batchId, docId) {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/download_document/${batchId}/${docId}`, {
+      method: "GET",
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to download document");
+    }
+    return await response.blob();
+  } catch (error) {
+    console.error("Download Document error:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Delete a single document from a batch.
+ * @param {string} batchId 
+ * @param {string} docId 
+ * @returns {Promise<Object>} Deletion response.
+ */
+export async function deleteDocument(batchId, docId) {
+  try {
+    const response = await fetch(`${BASE_URL}/documents/delete_document/${batchId}/${docId}`, {
+      method: "DELETE",
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to delete document");
+    }
+    return data;
+  } catch (error) {
+    console.error("Delete Document error:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Construct the preview URL for a single document.
+ * @param {string} batchId 
+ * @param {string} docId 
+ * @returns {string} Preview URL.
+ */
+export function getPreviewURL(batchId, docId) {
+  return `${BASE_URL}/documents/preview_document/${batchId}/${docId}`;
+}
+
+/**
+ * Construct the download URL for a single document.
+ * @param {string} batchId 
+ * @param {string} docId 
+ * @returns {string} Download URL.
+ */
+export function getDownloadURL(batchId, docId) {
+  return `${BASE_URL}/documents/download_document/${batchId}/${docId}`;
 }

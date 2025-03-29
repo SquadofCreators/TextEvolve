@@ -1,146 +1,110 @@
-// src/components/DocCard.jsx
-import React, { useState, useRef, useEffect } from 'react';
-import { FiShare2, FiChevronDown, FiEye } from 'react-icons/fi';
+import React from 'react';
+import { format } from 'date-fns';
+import { IoMdOpen } from 'react-icons/io';
+import { useNavigate } from 'react-router-dom';
 
-function DocCard({ data, onViewDocs }) {
-  const {
-    title,
-    description,
-    uniqueId,
-    docType,
-    language,
-    createdOn,
-    lastModified,
-    fileSize,
-    fileType,
-    preview,
-    downloadUrl,
-    filename,
-  } = data;
+/**
+ * Safely format a date.
+ * If the date is an object with a $date property, that value is used.
+ * Returns a formatted string like "March 15, 2025, 09:35 AM" or "N/A" if invalid.
+ */
+function formatDate(dateInput) {
+  if (!dateInput) return 'N/A';
+  const dateString =
+    typeof dateInput === 'object' && dateInput.$date ? dateInput.$date : dateInput;
+  try {
+    const parsedDate = new Date(dateString);
+    if (isNaN(parsedDate.getTime())) return 'N/A';
+    return format(parsedDate, 'PPP, p');
+  } catch {
+    return 'N/A';
+  }
+}
 
-  const [downloadOpen, setDownloadOpen] = useState(false);
+function DocCard({ data = {}, onPreview = () => {}, onDownload = () => {}, onOpen = () => {} }) {
+  // Use fallback values in case keys come in different casing.
+  const _id = data._id || data.Id || 'N/A';
+  const name = data.name || data.Name || 'Untitled Batch';
+  const created_on = data.created_on || data['Created On'];
+  const modified_on = data.modified_on || data['Modified On'];
+  const total_file_size = data.total_file_size || data['Total File Size'];
+  const total_files = data.total_files || data['Total files'];
+  const file_types = data.file_types || data['File Types'];
+  
+  const fileTypes = Array.isArray(file_types) ? file_types.join(', ') : file_types || 'N/A';
 
-  const toggleDownload = () => {
-    setDownloadOpen(!downloadOpen);
+  const navigate = useNavigate();
+
+  // handle open batch
+  const handleOpenBatch = (e) => {
+    e.stopPropagation();
+    onOpen();
+    navigate(`/batch/${_id}`);
+
   };
-
-  // For batch summaries, we assume a single download option (e.g. ZIP).
-  // For individual documents, we offer multiple formats.
-  const downloadAs = (format) => {
-    alert(`Downloading as ${format}`);
-    setDownloadOpen(false);
-  };
-
-  const downloadRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutsideDownload = (e) => {
-      if (downloadOpen && downloadRef.current && !downloadRef.current.contains(e.target)) {
-        setDownloadOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutsideDownload);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutsideDownload);
-    };
-  }, [downloadOpen]);
 
   return (
-    <div className="relative rounded-lg border border-gray-200 shadow-md p-4 w-full bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100">
-      <div className="flex items-center justify-between mb-2">
-        {/* Unique ID */}
-        <p className="text-sm font-medium">
-          <span className="text-gray-400">Unique ID:</span>
-          <span className="ml-1">{uniqueId}</span>
+    <div className="relative p-5 bg-slate-50 dark:bg-slate-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
+      {/* Top Row: Batch ID and Open Icon */}
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Batch ID: <span className="font-bold">#{_id}</span>
         </p>
-        {/* Share Button */}
         <button
-          className="rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer p-2"
-          onClick={() => alert('Share functionality')}
-          title="Share Document"
+          type="button"
+          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+          onClick={handleOpenBatch}
         >
-          <FiShare2 className="text-base" />
+          <span className="text-xs">Open</span>
+          <IoMdOpen className="text-sm" />
         </button>
       </div>
 
-      {/* Title & Description */}
-      <h3 className="font-bold text-lg mb-2 line-clamp-1">{title}</h3>
-      <p className="text-gray-500 text-sm mb-4 line-clamp-3">{description}</p>
+      {/* Title */}
+      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 line-clamp-1 mb-2 mt-4">
+        {name}
+      </h3>
 
-      {/* Meta Info */}
-      <div className="text-sm space-y-1 mb-4">
-        <p className="font-medium">
-          <span className="text-gray-500 font-normal">Language:</span> {language}
+      {/* Batch Details */}
+      <div className="flex flex-col gap-2 mt-5">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="font-medium">Uploaded On:</span> {formatDate(created_on)}
         </p>
-        <p className="font-medium">
-          <span className="text-gray-500 font-normal">Created On:</span> {createdOn}
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="font-medium">Last Modified:</span> {formatDate(modified_on)}
         </p>
-        <p className="font-medium">
-          <span className="text-gray-500 font-normal">Last Modified:</span> {lastModified}
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="font-medium">Total File Size:</span>{' '}
+          {total_file_size && total_file_size > 0
+            ? (total_file_size / 1024 / 1024).toFixed(2) + ' MB'
+            : 'N/A'}
         </p>
-        <p className="font-medium">
-          <span className="text-gray-500 font-normal">File Size:</span> {fileSize}
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="font-medium">Total Files:</span> {total_files ?? 'N/A'}
         </p>
-        <p className="font-medium">
-          <span className="text-gray-500 font-normal">File Type:</span> {fileType}
-        </p>
+        {fileTypes && (
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            <span className="font-medium">File Types:</span> {fileTypes}
+          </p>
+        )}
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end space-x-2">
-        {/* View Docs Button: Only show if onViewDocs callback is provided */}
-        {onViewDocs && language === "Batch" && (
-          <button
-            onClick={onViewDocs}
-            className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition"
-            title="View Documents"
-          >
-            <FiEye className="w-6 h-6" />
-          </button>
-        )}
-        {/* Download Dropdown */}
-        <div className="relative" ref={downloadRef}>
-          <button
-            onClick={toggleDownload}
-            className="flex items-center gap-1 px-4 py-1.5 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors cursor-pointer"
-            title="Download Options"
-          >
-            Download <FiChevronDown className="w-4 h-4" />
-          </button>
-          {downloadOpen && (
-            <div className="absolute top-8 right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-md z-10">
-              {language === "Batch" ? (
-                <button
-                  onClick={() => downloadAs('ZIP')}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm cursor-pointer"
-                >
-                  Download Batch as ZIP
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={() => downloadAs('PDF')}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm cursor-pointer"
-                  >
-                    Download as PDF
-                  </button>
-                  <button
-                    onClick={() => downloadAs('DOCX')}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm cursor-pointer"
-                  >
-                    Download as DOCX
-                  </button>
-                  <button
-                    onClick={() => downloadAs('TXT')}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm cursor-pointer"
-                  >
-                    Download as TXT
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+      {/* Action Buttons */}
+      <div className="mt-4 w-full flex justify-end gap-4">
+        <button
+          type="button"
+          onClick={onPreview}
+          className="px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 focus:outline-none"
+        >
+          Preview All Docs
+        </button>
+        <button
+          type="button"
+          onClick={onDownload}
+          className="px-3 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none"
+        >
+          Download All Docs
+        </button>
       </div>
     </div>
   );

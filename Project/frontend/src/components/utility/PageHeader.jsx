@@ -2,17 +2,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { IoIosArrowBack } from 'react-icons/io';
+import { useNavigate } from 'react-router-dom';
 
 function PageHeader({ title, link = "/", heading, description, actions }) {
+
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <div>
       {/* Top Bar: Back button and optional title */}
       <div className="flex justify-between items-center px-2 pr-4 mb-8">
         <Link 
           className="flex items-center gap-0.5 text-gray-600 dark:text-gray-300 hover:text-orange-500 transition-colors"
-          to={link}
+          // to={link}
+          onClick={handleBack}
         >
-          <IoIosArrowBack className="text-base mt-0.5" />
+          <IoIosArrowBack className="text-base" />
           <span className="font-medium">Back</span>
         </Link>
         {title && (

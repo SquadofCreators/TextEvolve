@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // For redirection
 import BannerImg from '../assets/images/banner-bg.jpg';
 
 // Logos
@@ -10,10 +11,18 @@ import { useTheme } from '../contexts/ThemeContext';
 
 import DocCard from '../components/DocCard';
 import PreviewModal from '../components/utility/PreviewModal';
-import { getAllBatches, getPreviewURL } from '../services/documentServices';
+import {
+  getAllBatches,
+  getPreviewURL,
+  getDownloadURL,
+  downloadBatchDocuments,
+} from '../services/documentServices';
+
+const BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 
 function LandingPage() {
   const { darkMode } = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -32,18 +41,18 @@ function LandingPage() {
   const [loadingBatches, setLoadingBatches] = useState(true);
   const [batchesError, setBatchesError] = useState(null);
 
-  // Preview modal state for documents in a batch
+  // Preview modal state for individual documents in a batch
   const [previewModalDocs, setPreviewModalDocs] = useState([]);
   const [previewModalIndex, setPreviewModalIndex] = useState(null);
 
-  // Fetch batches on mount
   useEffect(() => {
     async function fetchBatches() {
       try {
         const fetchedBatches = await getAllBatches();
+        // Sort using modified_on or created_on timestamps (backend keys are lowercase)
         const sortedBatches = fetchedBatches.sort((a, b) => {
-          const dateA = new Date(a.lastModified || a.createdOn || 0);
-          const dateB = new Date(b.lastModified || b.createdOn || 0);
+          const dateA = new Date(a.modified_on || a.created_on || 0);
+          const dateB = new Date(b.modified_on || b.created_on || 0);
           return dateB - dateA;
         });
         setBatches(sortedBatches.slice(0, 5));
@@ -58,13 +67,17 @@ function LandingPage() {
     fetchBatches();
   }, []);
 
-  // When a batch card is clicked, open the preview modal with its documents.
-  // Ensure each document has a valid previewUrl.
-  const handleBatchClick = (batch) => {
+  /**
+   * When user clicks "Preview Docs" on a batch card,
+   * map each document to include a preview_url and download_url.
+   */
+  const handlePreview = (batch) => {
     if (batch.documents && batch.documents.length > 0) {
+      // Use the preview_url if returned; otherwise, fallback to helper functions.
       const docsWithPreview = batch.documents.map((doc) => ({
         ...doc,
-        previewUrl: doc.previewUrl || getPreviewURL(doc.id),
+        preview_url: doc.preview_url || getPreviewURL(batch._id, doc.id),
+        download_url: doc.download_url || getDownloadURL(batch._id, doc.id),
       }));
       setPreviewModalDocs(docsWithPreview);
       setPreviewModalIndex(0);
@@ -73,26 +86,51 @@ function LandingPage() {
     }
   };
 
-  // Modal navigation handlers
+  /**
+   * When user clicks "Download" on a batch card,
+   * download all documents as a zip.
+   */
+  const handleDownload = async (batch) => {
+    try {
+      const blob = await downloadBatchDocuments(batch._id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  // Modal navigation handlers for individual document preview
   const closeModal = () => setPreviewModalIndex(null);
-  const prevDoc = () =>
-    setPreviewModalIndex((i) => (i > 0 ? i - 1 : i));
+  const prevDoc = () => setPreviewModalIndex((i) => (i > 0 ? i - 1 : i));
   const nextDoc = () =>
-    setPreviewModalIndex((i) =>
-      i < previewModalDocs.length - 1 ? i + 1 : i
-    );
+    setPreviewModalIndex((i) => (i < previewModalDocs.length - 1 ? i + 1 : i));
 
   return (
     <div className="pb-12">
       {/* Banner Section */}
       <div className="relative rounded-xl overflow-hidden border border-gray-700 dark:border-none select-none">
-        <img src={BannerImg} alt="Banner Image" className="object-cover w-full h-64 shadow-lg" />
+        <img
+          src={BannerImg}
+          alt="Banner Image"
+          className="object-cover w-full h-64 shadow-lg"
+        />
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="absolute inset-0 flex flex-col items-center justify-around py-6 gap-3 text-gray-800 dark:text-gray-200">
           <div className="flex items-center gap-8">
             {bannerLogos.map((logo, index) => (
-              <a key={index} href={logo.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
-                <img src={logo.logo} alt={logo.name} className="w-10 h-10 md:w-12 md:h-12 cursor-pointer" />
+              <a
+                key={index}
+                href={logo.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center"
+              >
+                <img
+                  src={logo.logo}
+                  alt={logo.name}
+                  className="w-10 h-10 md:w-12 md:h-12 cursor-pointer"
+                />
               </a>
             ))}
           </div>
@@ -106,47 +144,61 @@ function LandingPage() {
       </div>
 
       {/* Batches Section */}
-      <div className="max-w-5xl mx-auto px-4 mt-10">
+      <div className="w-full px-4 mt-10">
         <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">Recent Batches</h2>
         {loadingBatches ? (
           <p className="text-center text-gray-500">Loading batches...</p>
         ) : batchesError ? (
           <p className="text-center text-red-500">{batchesError}</p>
         ) : batches.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {batches.map((batch) => (
-              <div key={batch.id}>
+          <div className="grid grid-cols-1 gap-6">
+            {batches.map((batch) => {
+              const fileTypes = batch.file_types ? batch.file_types.join(', ') : '';
+              const cardData = {
+                Id: batch._id,
+                Name: batch.name,
+                "Created On": batch.created_on,
+                "Modified On": batch.modified_on,
+                "Total File Size": batch.total_file_size,
+                "Total files": batch.total_files,
+                "File Types": fileTypes,
+                "download all docs zip": `${BASE_URL}/documents/download_batch_documents/${batch._id}`,
+                "preview all docs": `${BASE_URL}/documents/preview_batch_documents/${batch._id}`,
+              };
+              return (
                 <DocCard
-                  data={{
-                    uniqueId: batch.id,
-                    title: batch.name,
-                    description: `Documents: ${batch.documentCount} | Total Size: ${batch.totalFileSize} | File Types: ${batch.fileTypes.join(', ')}`,
-                    language: "Batch",
-                    createdOn: batch.createdOn,
-                    lastModified: batch.lastModified,
-                    fileSize: batch.totalFileSize,
-                    fileType: batch.fileTypes.join(', '),
-                    preview: null, // Optionally add a representative image or icon for batch summary
-                  }}
+                  key={batch._id}
+                  data={cardData}
+                  onPreview={() => handlePreview(batch)}
+                  onDownload={() => handleDownload(batch)}
                 />
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <p className="text-center text-gray-500">No batches found.</p>
+          <div className="text-center space-y-4">
+            <p className="text-gray-500">No batches found.</p>
+            <button
+              onClick={() => navigate('/upload')}
+              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            >
+              Start Upload Files
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Preview Modal for documents */}
+      {/* Preview Modal for individual documents */}
       {previewModalIndex !== null && previewModalDocs.length > 0 && (
         <PreviewModal
-          isOpen={previewModalIndex !== null}
+          isOpen={true}
           onClose={closeModal}
           file={previewModalDocs[previewModalIndex]}
           currentPage={previewModalIndex}
           totalPages={previewModalDocs.length}
           onPrev={prevDoc}
           onNext={nextDoc}
+          filesList={previewModalDocs}
         />
       )}
     </div>

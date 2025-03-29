@@ -4,6 +4,7 @@ import PreviewModal from '../components/utility/PreviewModal';
 import { uploadDocuments } from '../services/documentServices';
 import { FiTrash, FiImage, FiFileText, FiFile } from 'react-icons/fi';
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
+import { useNavigate } from 'react-router-dom';
 
 function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -15,6 +16,7 @@ function UploadPage() {
   const [showDropzone, setShowDropzone] = useState(true);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const docsPerPage = 2;
+  const navigate = useNavigate();
 
   // Helper: Rename file title in local state
   const renameFile = (index, newName) => {
@@ -25,18 +27,20 @@ function UploadPage() {
     });
   };
 
-  // Modal navigation functions
+  // Modal navigation functions for previewing uploaded docs
   const prevFile = () =>
     setPreviewModalIndex((i) => (i > 0 ? i - 1 : i));
   const nextFile = () =>
-    setPreviewModalIndex((i) => (i < uploadedFiles.length - 1 ? i + 1 : i));
+    setPreviewModalIndex((i) =>
+      i < uploadedFiles.length - 1 ? i + 1 : i
+    );
 
-  // Calculate pagination data
+  // Calculate pagination data for uploaded documents
   const totalPages = Math.ceil(uploadedFiles.length / docsPerPage);
   const startIndex = currentPageIndex * docsPerPage;
   const paginatedDocs = uploadedFiles.slice(startIndex, startIndex + docsPerPage);
 
-  // Helper: Get file type icon based on MIME type
+  // Helper: Get file type icon based on MIME type (for files not previewed as images)
   const getFileTypeIcon = (type) => {
     if (type?.startsWith('image/')) return <FiImage className="w-6 h-6 text-blue-500" />;
     if (type === 'application/pdf') return <FiFileText className="w-6 h-6 text-red-500" />;
@@ -90,21 +94,23 @@ function UploadPage() {
     setUploadStatus('');
 
     const formData = new FormData();
-    // Append the actual File objects stored in the 'file' property
-    files.forEach((item) => formData.append('file', item.file));
+    // Append each File object stored in the 'file' property using key 'files'
+    files.forEach((item) => formData.append('files', item.file));
     if (batchId) formData.append('batch_id', batchId);
 
-    // Debug: log FormData entries (file content will not be printed)
+    // Debug: log FormData entries (file content not printed)
     for (let pair of formData.entries()) {
       console.log(pair[0] + ': ', pair[1]);
     }
 
     try {
       const result = await uploadDocuments(formData);
-      setBatchId(result.batch_id);
+      // The upload service now returns the batch directly.
+      setBatchId(result._id);
+      // Append new documents to the existing uploadedFiles array
       setUploadedFiles((prev) => [...prev, ...result.documents]);
       setFiles([]); // Clear selected files after upload
-      setUploadStatus(`Upload successful. Batch ID: ${result.batch_id}`);
+      setUploadStatus(`Upload successful. Batch ID: ${result._id}`);
       setShowDropzone(false);
       setCurrentPageIndex(0);
     } catch (error) {
@@ -125,8 +131,14 @@ function UploadPage() {
     setCurrentPageIndex(0);
   };
 
+  // Handler to proceed to extract text from all documents.
+  const handleExtractTextFromAll = () => {
+    if (!batchId) return;
+    navigate(`/extract-all/${batchId}`);
+  };
+
   return (
-    <div className="h-full bg-gray-100 dark:bg-gray-900 py-6 px-4">
+    <div className="flex-1 h-full p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
       <div className="max-w-3xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 text-center mb-6">
           Document Upload
@@ -175,7 +187,11 @@ function UploadPage() {
               >
                 <div className="flex items-center gap-4">
                   {item.file.type?.startsWith('image/') ? (
-                    <img src={item.preview} alt={item.title} className="w-12 h-12 object-cover rounded-lg" />
+                    <img
+                      src={item.preview}
+                      alt={item.title}
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
                   ) : (
                     <div className="w-12 h-12 flex items-center justify-center">
                       {getFileTypeIcon(item.file.type || '')}
@@ -215,7 +231,9 @@ function UploadPage() {
         )}
 
         {/* Upload Status */}
-        {uploadStatus && <p className="mt-4 text-center text-sm text-gray-600">{uploadStatus}</p>}
+        {uploadStatus && (
+          <p className="mt-4 text-center text-sm text-gray-600">{uploadStatus}</p>
+        )}
 
         {/* Uploaded Documents with Pagination */}
         {uploadedFiles.length > 0 && (
@@ -232,18 +250,28 @@ function UploadPage() {
                     className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden shadow-md transition-transform hover:scale-105 cursor-pointer"
                     onClick={() => setPreviewModalIndex(globalIndex)}
                   >
-                    {doc.previewUrl ? (
-                      <img src={doc.previewUrl} alt={doc.title} className="w-full h-32 object-cover" />
+                    {doc.preview_url ? (
+                      <img
+                        src={doc.preview_url}
+                        alt={doc.name}
+                        className="w-full h-32 object-cover"
+                      />
                     ) : (
                       <div className="flex items-center justify-center w-full h-32 bg-gray-200 dark:bg-gray-700">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{doc.title}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          {doc.name}
+                        </p>
                       </div>
                     )}
                     <div className="p-3 bg-gray-50 dark:bg-gray-800">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{doc.title}</h3>
-                      <p className="text-sm text-gray-500">Size: {doc.fileSize}</p>
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
+                        {doc.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Size: {doc.file_size} bytes
+                      </p>
                       <p className="text-xs text-gray-400">
-                        Uploaded: {new Date(doc.upload_date).toLocaleDateString()}
+                        Uploaded: {new Date(doc.uploaded_on).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -253,14 +281,18 @@ function UploadPage() {
             {totalPages > 1 && (
               <div className="flex justify-center items-center mt-8 space-x-4">
                 <button
-                  onClick={() => setCurrentPageIndex((prev) => Math.max(prev - 1, 0))}
+                  onClick={() =>
+                    setCurrentPageIndex((prev) => Math.max(prev - 1, 0))
+                  }
                   disabled={currentPageIndex === 0}
                   className="px-4 py-2 text-gray-700 hover:text-white bg-gray-300 hover:bg-orange-500 disabled:opacity-50 cursor-pointer disabled:cursor-no-drop rounded"
                 >
                   <FaAngleLeft className="inline-flex mb-0.5" /> Previous
                 </button>
                 <button
-                  onClick={() => setCurrentPageIndex((prev) => Math.min(prev + 1, totalPages - 1))}
+                  onClick={() =>
+                    setCurrentPageIndex((prev) => Math.min(prev + 1, totalPages - 1))
+                  }
                   disabled={currentPageIndex === totalPages - 1}
                   className="px-4 py-2 text-gray-700 hover:text-white bg-gray-300 hover:bg-orange-500 disabled:opacity-50 cursor-pointer disabled:cursor-no-drop rounded"
                 >
@@ -270,18 +302,32 @@ function UploadPage() {
             )}
           </div>
         )}
+
+        {/* Proceed to Extract Text from All Button */}
+        {uploadedFiles.length > 0 && batchId && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={handleExtractTextFromAll}
+              className="px-6 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
+            >
+              Proceed to Extract Text from All
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Preview Modal */}
-      <PreviewModal
-        isOpen={previewModalIndex !== null}
-        onClose={() => setPreviewModalIndex(null)}
-        file={uploadedFiles[previewModalIndex]}
-        currentPage={previewModalIndex || 0}
-        totalPages={uploadedFiles.length}
-        onPrev={prevFile}
-        onNext={nextFile}
-      />
+      {previewModalIndex !== null && uploadedFiles.length > 0 && (
+        <PreviewModal
+          isOpen={previewModalIndex !== null}
+          onClose={() => setPreviewModalIndex(null)}
+          file={uploadedFiles[previewModalIndex]}
+          currentPage={previewModalIndex}
+          totalPages={uploadedFiles.length}
+          onPrev={prevFile}
+          onNext={nextFile}
+        />
+      )}
     </div>
   );
 }
