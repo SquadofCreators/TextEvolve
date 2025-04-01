@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { FiX, FiChevronLeft, FiChevronRight, FiDownload } from 'react-icons/fi';
 import JSZip from 'jszip';
 
+import { BsFileZip } from "react-icons/bs";
+
 const PreviewModal = ({
   isOpen,
   onClose,
@@ -103,23 +105,23 @@ const PreviewModal = ({
           <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200 truncate">
             {file.title || file.filename || 'Preview File'}
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center md:gap-4">
             <button
               onClick={handleDownload}
               title="Download File"
-              className="flex items-center gap-2 text-blue-500 hover:text-gray-100 bg-gray-50 hover:bg-blue-500 px-3 py-2 rounded-lg transition cursor-pointer"
+              className="flex items-center gap-2 text-blue-500 hover:text-gray-100 hover:bg-blue-500 md:px-3 py-2 rounded-lg transition cursor-pointer"
             >
               <FiDownload className="w-5 h-5" />
-              Download
+              <span className='hidden md:flex'>Download</span>
             </button>
             {showDownloadAll && filesList && filesList.length > 1 && (
               <button
                 onClick={handleDownloadAll}
                 title="Download All as Zip"
-                className="flex items-center gap-2 text-green-500 hover:text-gray-100 bg-gray-50 hover:bg-green-500 px-3 py-2 rounded-lg transition cursor-pointer"
+                className="flex items-center gap-2 text-green-500 hover:text-gray-100 hover:bg-green-500md: px-3 py-2 rounded-lg transition cursor-pointer"
               >
-                <FiDownload className="w-5 h-5" />
-                Download All
+                <BsFileZip className="w-5 h-5" />
+                <span className='hidden md:flex'>Download Zip</span>
               </button>
             )}
             <button
