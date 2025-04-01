@@ -132,16 +132,16 @@ function UploadPage() {
   };
 
   // Handler to proceed to extract text from all documents.
-  const handleExtractTextFromAll = () => {
+  const handleExtractText = () => {
     if (!batchId) return;
-    navigate(`/extract-all/${batchId}`);
+    navigate(`/extract-text/${batchId}`);
   };
 
   return (
     <div className="flex-1 h-full p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
       <div className="max-w-3xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 text-center mb-6">
-          Document Upload
+          Upload Documents
         </h1>
 
         {/* Toggle Dropzone Button */}
@@ -160,7 +160,7 @@ function UploadPage() {
         {showDropzone && (
           <div
             {...getRootProps()}
-            className={`p-12 border-2 border-dashed rounded-lg text-center transition-colors ${
+            className={`p-12 border-2 border-dashed rounded-lg text-center cursor-pointer select-none transition-colors ${
               isDragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300'
             }`}
           >
@@ -238,9 +238,6 @@ function UploadPage() {
         {/* Uploaded Documents with Pagination */}
         {uploadedFiles.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-              Uploaded Documents (Batch ID: {batchId})
-            </h2>
             <div className="grid grid-cols-2 gap-4">
               {paginatedDocs.map((doc, index) => {
                 const globalIndex = startIndex + index;
@@ -303,14 +300,14 @@ function UploadPage() {
           </div>
         )}
 
-        {/* Proceed to Extract Text from All Button */}
+        {/* Proceed to Extract Text Button */}
         {uploadedFiles.length > 0 && batchId && (
           <div className="mt-8 text-center">
             <button
-              onClick={handleExtractTextFromAll}
+              onClick={handleExtractText}
               className="px-6 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
             >
-              Proceed to Extract Text from All
+              Proceed to Extract Text
             </button>
           </div>
         )}

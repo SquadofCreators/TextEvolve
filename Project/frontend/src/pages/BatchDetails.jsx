@@ -12,6 +12,14 @@ import PreviewModal from "../components/utility/PreviewModal";
 import ConfirmationModal from "../components/utility/ConfirmationModal";
 import { FiTrash2, FiFileText, FiEye, FiDownload } from "react-icons/fi";
 
+// MetaText
+import MetaText from "../components/utility/MetaText";
+
+import { LuCalendarDays, LuCalendarClock } from "react-icons/lu";
+import { GrStorage } from "react-icons/gr";
+import { MdFolderOpen } from "react-icons/md";
+import { FaRegFileLines, FaHashtag } from "react-icons/fa6";
+
 const BatchDetails = () => {
   const { batchId } = useParams();
   const navigate = useNavigate();
@@ -89,7 +97,7 @@ const BatchDetails = () => {
 
   // Handler to proceed to text extraction.
   const handleTextExtraction = (doc) => {
-    navigate(`/extract-text/${batch._id}/${doc.id}`);
+    navigate(`/extract-text/${batch._id}`);
   };
 
   if (loading) {
@@ -115,38 +123,31 @@ const BatchDetails = () => {
   }
 
   return (
-    <div className="flex-1 h-full p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+    <div className="flex-1 h-full px-1 py-6 md:p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
       <PageHeader title="Batch Details" />
 
-      <div className="px-6 mb-8">
+      <div className="px-4 mb-8">
         <h2 className="text-3xl font-semibold text-gray-700 mb-4">{batch.name}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <p className="text-gray-600">
-            <span className="font-medium">Batch ID:</span> {batch._id}
-          </p>
-          <p className="text-gray-600">
-            <span className="font-medium">Created On:</span>{" "}
-            {formatDate(batch.created_on)}
-          </p>
-          <p className="text-gray-600">
-            <span className="font-medium">Modified On:</span>{" "}
-            {formatDate(batch.modified_on)}
-          </p>
-          <p className="text-gray-600">
-            <span className="font-medium">Total File Size:</span>{" "}
-            {formatBytesToMB(batch.total_file_size)}
-          </p>
-          <p className="text-gray-600">
-            <span className="font-medium">Total Files:</span> {batch.total_files}
-          </p>
-          <p className="text-gray-600">
-            <span className="font-medium">File Types:</span>{" "}
-            {batch.file_types.join(", ")}
-          </p>
+          <MetaText icon={<FaHashtag/>} title="Created On" value={batch._id}/>
+
+          <MetaText icon={<LuCalendarDays/>} title="Created On" value={formatDate(batch.created_on)}/>
+          
+          <MetaText icon={<LuCalendarClock/>} title="Modified On" value={formatDate(batch.modified_on)} />
+
+          <MetaText icon={<GrStorage/>} title="Total File Size" value={formatBytesToMB(batch.total_file_size)} />
+
+          <MetaText 
+            icon={<MdFolderOpen/>} 
+            title="Total Files" 
+            value={batch.total_files > 1 ? batch.total_files + " Files" : batch.total_files + " File" } 
+          />
+
+          <MetaText icon={<FaRegFileLines/>} title="File Types" value={batch.file_types.join(", ")} />
         </div>
       </div>
 
-      <div className="px-6 mb-8">
+      <div className="px-4 mb-8">
         <h2 className="text-2xl font-semibold text-gray-700 mb-4">
           Documents in Batch
         </h2>
@@ -157,29 +158,31 @@ const BatchDetails = () => {
                 key={doc.id}
                 className="bg-white shadow rounded-lg p-4 relative"
               >
-                {/* Top-right icon actions */}
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <button
-                    onClick={() => handlePreview(doc)}
-                    title="Preview"
-                    className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                  >
-                    <FiEye size={18} />
-                  </button>
-                  <a
-                    href={doc.download_url || getDownloadURL(batch._id, doc.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Download"
-                    className="text-green-600 hover:text-green-800 cursor-pointer"
-                  >
-                    <FiDownload size={18} />
-                  </a>
-                </div>
                 {/* Document Details */}
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  {doc.title || doc.name}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    {doc.title || doc.name}
+                  </h3>
+                  
+                  <div className="top-2 right-2 flex gap-4">
+                    <button
+                      onClick={() => handlePreview(doc)}
+                      title="Preview"
+                      className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                    >
+                      <FiEye size={18} />
+                    </button>
+                    <a
+                      href={doc.download_url || getDownloadURL(batch._id, doc.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Download"
+                      className="text-green-600 hover:text-green-800 cursor-pointer"
+                    >
+                      <FiDownload size={18} />
+                    </a>
+                  </div>
+                </div>
                 <div className="flex flex-col gap-1">
                   <p className="text-sm text-gray-600">
                     <span className="font-medium">File Size:</span> {formatBytesToMB(doc.file_size)}

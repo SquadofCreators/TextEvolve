@@ -2,11 +2,12 @@ import React from 'react';
 import { format } from 'date-fns';
 import { IoMdOpen } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
-
 import { LuCalendarDays, LuCalendarClock } from "react-icons/lu";
 import { GrStorage } from "react-icons/gr";
 import { MdFolderOpen } from "react-icons/md";
 import { FaRegFileLines } from "react-icons/fa6";
+import MetaText from '../components/utility/MetaText';
+import { TbTextRecognition, TbTextScan2 } from "react-icons/tb";
 
 /**
  * Safely format a date.
@@ -26,7 +27,15 @@ function formatDate(dateInput) {
   }
 }
 
-function DocCard({ data = {}, onPreview = () => {}, onDownload = () => {}, onOpen = () => {} }) {
+function DocCard(
+  { 
+    data = {}, 
+    onPreview = () => {}, 
+    onDownload = () => {}, 
+    onExtractData = () => {}, 
+    onOpen = () => {} 
+  }) {
+
   // Use fallback values in case keys come in different casing.
   const _id = data._id || data.Id || 'N/A';
   const name = data.name || data.Name || 'Untitled Batch';
@@ -40,24 +49,24 @@ function DocCard({ data = {}, onPreview = () => {}, onDownload = () => {}, onOpe
 
   const navigate = useNavigate();
 
-  // handle open batch
+  // Handle open batch
   const handleOpenBatch = (e) => {
     e.stopPropagation();
     onOpen();
     navigate(`/batch/${_id}`);
-
   };
 
   return (
     <div className="relative p-4 md:p-5 bg-slate-50 dark:bg-slate-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
       {/* Top Row: Batch ID and Open Icon */}
       <div className="flex items-center justify-between mb-1">
-        <p className="flex items-center gap-2 line-clamp-1 text-xs md:text-sm text-gray-500 dark:text-gray-400">
-          <span className='hidden md:flex'>Batch ID: </span> <span className="font-bold truncate">#{_id}</span>
+        <p className="flex items-center gap-2 line-clamp-1 text-base text-gray-500 dark:text-gray-400">
+          <span className='hidden md:flex'>Batch ID: </span>
+          <span className="font-bold truncate">#{_id}</span>
         </p>
         <button
           type="button"
-          className=" hidden md:flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+          className="hidden md:flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
           onClick={handleOpenBatch}
         >
           <span className="text-xs">Open</span>
@@ -70,78 +79,63 @@ function DocCard({ data = {}, onPreview = () => {}, onDownload = () => {}, onOpe
         {name}
       </h3>
 
-      {/* Batch Details */}
+      {/* Batch Details using MetaText */}
       <div className="flex flex-col gap-2 mt-5">
-        <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <span className="hidden md:block font-medium">
-            Uploaded On:
-          </span> 
-          <LuCalendarDays className='md:hidden text-base' />
-          {formatDate(created_on)}
-        </p>
-        <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <span className="hidden md:block font-medium">
-            Last Modified:
-          </span> 
-          <LuCalendarClock className='md:hidden text-base' />
-          {formatDate(modified_on)}
-        </p>
-        <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <span className="hidden md:block font-medium">
-            Total File Size:
-          </span>{' '}
-          <GrStorage className='md:hidden text-base'/>
-
-          {total_file_size && total_file_size > 0
-            ? (total_file_size / 1024 / 1024).toFixed(2) + ' MB'
-            : 'N/A'}
-        </p>
-        <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <span className="hidden md:block font-medium">
-            Total Files:
-          </span> 
-          <MdFolderOpen className='md:hidden text-base'/>
-          
-          {total_files ?? 'N/A'}
-
-          {total_files > 1 ? " files" : " file"}
-        </p>
+        <MetaText 
+          icon={<LuCalendarDays className="md:hidden text-base" />}
+          title="Uploaded On"
+          value={formatDate(created_on)}
+        />
+        <MetaText 
+          icon={<LuCalendarClock className="md:hidden text-base" />}
+          title="Last Modified"
+          value={formatDate(modified_on)}
+        />
+        <MetaText 
+          icon={<GrStorage className="md:hidden text-base" />}
+          title="Total File Size"
+          value={total_file_size && total_file_size > 0 
+                    ? (total_file_size / 1024 / 1024).toFixed(2) + ' MB' 
+                    : 'N/A'}
+        />
+        <MetaText 
+          icon={<MdFolderOpen className="md:hidden text-base" />}
+          title="Total Files"
+          value={`${total_files ?? 'N/A'} ${total_files > 1 ? "files" : "file"}`}
+        />
         {fileTypes && (
-          <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[28ch]">
-            <span className="hidden md:block font-medium">
-              File Types:
-            </span> 
-            <FaRegFileLines className='md:hidden text-base'/>
-
-            {fileTypes}
-          </p>
+          <MetaText 
+            icon={<FaRegFileLines className="md:hidden text-base" />}
+            title="File Types"
+            value={fileTypes}
+          />
         )}
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-4 w-full flex justify-end gap-4">
+      <div className="mt-4 w-full flex md:justify-end gap-4">
         <button
           type="button"
-          className="w-full flex md:hidden items-center justify-center gap-1 bg-orange-500 text-gray-100 rounded-md py-2 cursor-pointer"
+          className="w-full flex md:hidden items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer"
           onClick={handleOpenBatch}
         >
-          <span className="text-xs">Open</span>
-          <IoMdOpen className="text-sm" />
+          <span className="text-base">Open</span>
+          <IoMdOpen className="text-lg" />
         </button>
-
         <button
           type="button"
           onClick={onPreview}
-          className="hidden md:flex px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 focus:outline-none"
+          className="w-full md:w-max hidden md:flex items-center justify-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer"
         >
-          Preview All Docs
+          Preview Docs
         </button>
         <button
           type="button"
-          onClick={onDownload}
-          className="hidden md:flex px-3 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none"
+          onClick={onExtractData}
+          className="w-full md:w-max flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 text-gray-100 rounded-md cursor-pointer"
         >
-          Download All Docs
+          Extract Text
+          <TbTextScan2 className='text-lg' />
         </button>
       </div>
     </div>

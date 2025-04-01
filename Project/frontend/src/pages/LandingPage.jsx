@@ -49,23 +49,28 @@ function LandingPage() {
     async function fetchBatches() {
       try {
         const fetchedBatches = await getAllBatches();
-        // Sort using modified_on or created_on timestamps (backend keys are lowercase)
+  
+        // Ensure dates are properly parsed and sorted in descending order
         const sortedBatches = fetchedBatches.sort((a, b) => {
-          const dateA = new Date(a.modified_on || a.created_on || 0);
-          const dateB = new Date(b.modified_on || b.created_on || 0);
-          return dateB - dateA;
+          const dateA = new Date(b.modified_on.$date || b.created_on.$date || 0); // Swap a & b
+          const dateB = new Date(a.modified_on.$date || a.created_on.$date || 0);
+          return dateA - dateB;
         });
-        setBatches(sortedBatches.slice(0, 5));
+  
+        setBatches([...sortedBatches.slice(0, 5)]); // Display latest 5 batches
         setBatchesError(null);
       } catch (err) {
-        console.error('Error fetching batches:', err);
+        console.error("Error fetching batches:", err);
         setBatchesError(err.message);
       } finally {
         setLoadingBatches(false);
       }
     }
+  
     fetchBatches();
   }, []);
+  
+  
 
   /**
    * When user clicks "Preview Docs" on a batch card,
@@ -100,6 +105,11 @@ function LandingPage() {
     }
   };
 
+  // Extract Data
+  const handleExtractData = (batch) => {
+    navigate(`/extract-text/${batch._id}`)
+  }
+
   // Modal navigation handlers for individual document preview
   const closeModal = () => setPreviewModalIndex(null);
   const prevDoc = () => setPreviewModalIndex((i) => (i > 0 ? i - 1 : i));
@@ -107,13 +117,13 @@ function LandingPage() {
     setPreviewModalIndex((i) => (i < previewModalDocs.length - 1 ? i + 1 : i));
 
   return (
-    <div className="pb-12">
+    <div className="px-4 py-6">
       {/* Banner Section */}
       <div className="relative rounded-xl overflow-hidden border border-gray-700 dark:border-none select-none">
         <img
           src={BannerImg}
           alt="Banner Image"
-          className="object-cover w-full h-64 shadow-lg"
+          className="object-cover w-full h-56 md:h-64 shadow-lg"
         />
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="absolute inset-0 flex flex-col items-center justify-around py-6 gap-3 text-gray-800 dark:text-gray-200">
@@ -134,7 +144,7 @@ function LandingPage() {
               </a>
             ))}
           </div>
-          <h1 className="text-center text-2xl md:text-4xl font-bold text-gray-800">
+          <h1 className="text-center text-3xl md:text-4xl font-bold text-gray-700">
             Digitize <span className="text-orange-500">History,</span> <br /> Empower the Future
           </h1>
           <p className="hidden md:block text-base text-gray-500 text-center max-w-2xl">
@@ -144,8 +154,8 @@ function LandingPage() {
       </div>
 
       {/* Batches Section */}
-      <div className="w-full px-4 mt-10">
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">Recent Batches</h2>
+      <div className="w-full px-1 mt-5">
+        <h2 className="text-lg text-gray-500 dark:text-gray-100 mb-3">Recent Batches</h2>
         {loadingBatches ? (
           <p className="text-center text-gray-500">Loading batches...</p>
         ) : batchesError ? (
@@ -171,6 +181,7 @@ function LandingPage() {
                   data={cardData}
                   onPreview={() => handlePreview(batch)}
                   onDownload={() => handleDownload(batch)}
+                  onExtractData={() => handleExtractData(batch)}
                 />
               );
             })}

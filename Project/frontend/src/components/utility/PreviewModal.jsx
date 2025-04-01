@@ -109,7 +109,7 @@ const PreviewModal = ({
             <button
               onClick={handleDownload}
               title="Download File"
-              className="flex items-center gap-2 text-blue-500 hover:text-gray-100 hover:bg-blue-500 md:px-3 py-2 rounded-lg transition cursor-pointer"
+              className="flex items-center gap-2 text-blue-500 hover:text-gray-100 hover:bg-blue-500 px-3 py-2 rounded-lg transition cursor-pointer"
             >
               <FiDownload className="w-5 h-5" />
               <span className='hidden md:flex'>Download</span>
@@ -118,7 +118,7 @@ const PreviewModal = ({
               <button
                 onClick={handleDownloadAll}
                 title="Download All as Zip"
-                className="flex items-center gap-2 text-green-500 hover:text-gray-100 hover:bg-green-500md: px-3 py-2 rounded-lg transition cursor-pointer"
+                className="flex items-center gap-2 text-green-500 hover:text-gray-100 hover:bg-green-500 px-3 py-2 rounded-lg transition cursor-pointer"
               >
                 <BsFileZip className="w-5 h-5" />
                 <span className='hidden md:flex'>Download Zip</span>
