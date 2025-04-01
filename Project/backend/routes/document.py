@@ -6,14 +6,13 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 from bson import ObjectId
-from db_ext import mongo  # shared Mongo instance
+from db_ext import mongo  
 
 # If you plan to use OCR processing, uncomment the line below:
 # from utils.ocr import run_ocr_model
 
-# For PDF preview generation, ensure you have pdf2image installed and poppler available.
 # pip install pdf2image
-from pdf2image import convert_from_path
+# from pdf2image import convert_from_path
 
 document_bp = Blueprint('document', __name__)
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
