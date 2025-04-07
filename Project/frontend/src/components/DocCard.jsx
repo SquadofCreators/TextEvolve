@@ -1,144 +1,135 @@
-import React from 'react';
-import { format } from 'date-fns';
-import { IoMdOpen } from 'react-icons/io';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom"; // Import Link for navigation
+import { format } from "date-fns"; // Keep if formatDate prop isn't passed, but prefer prop
+import { IoMdOpen } from 'react-icons/io'; // Keep if needed, but replaced by Link
 import { LuCalendarDays, LuCalendarClock } from "react-icons/lu";
 import { GrStorage } from "react-icons/gr";
-import { MdFolderOpen } from "react-icons/md";
-import { FaRegFileLines } from "react-icons/fa6";
-import MetaText from '../components/utility/MetaText';
-import { TbTextRecognition, TbTextScan2 } from "react-icons/tb";
+import { MdFolderOpen, MdOutlineInfo } from "react-icons/md"; // Added Info icon for status
+import { FaHashtag } from "react-icons/fa6";
+import { TbTextScan2 } from "react-icons/tb";
+import { FiEye } from "react-icons/fi"; // For Preview button icon
+
+import MetaText from '../components/utility/MetaText'; // Assuming this component exists
 
 /**
- * Safely format a date.
- * If the date is an object with a $date property, that value is used.
- * Returns a formatted string like "March 15, 2025, 09:35 AM" or "N/A" if invalid.
+ * DocCard Component: Displays a summary card for a single batch.
+ * Used on pages like LandingPage to show recent batches.
+ *
+ * Props:
+ * - data: Batch object with fields (id, name, createdAt, updatedAt, totalFileCount, totalFileSize, status).
+ * - onPreview: Function to call when "Preview Docs" button is clicked, passes the batch object.
+ * - onExtractData: Function to call when "Extract Text" button is clicked, passes the batch object.
+ * - formatDate: Function to format date strings (ISO).
+ * - formatBytes: Function to format file sizes (expects bytes as string/BigInt).
  */
-function formatDate(dateInput) {
-  if (!dateInput) return 'N/A';
-  const dateString =
-    typeof dateInput === 'object' && dateInput.$date ? dateInput.$date : dateInput;
-  try {
-    const parsedDate = new Date(dateString);
-    if (isNaN(parsedDate.getTime())) return 'N/A';
-    return format(parsedDate, 'PPP, p');
-  } catch {
-    return 'N/A';
-  }
-}
+function DocCard({
+  data = {},
+  onPreview = () => {},
+  onExtractData = () => {},
+  // Expect formatters as props
+  formatDate = (d) => d ? new Date(d).toLocaleString() : 'N/A',
+  formatBytes = (b) => b ? `${b} Bytes` : 'N/A',
+}) {
 
-function DocCard(
-  { 
-    data = {}, 
-    onPreview = () => {}, 
-    onDownload = () => {}, 
-    onExtractData = () => {}, 
-    onOpen = () => {} 
-  }) {
+  // Destructure with fallbacks using the correct expected keys
+  const id = data.id || 'N/A';
+  const name = data.name || 'Untitled Batch';
+  const createdAt = data.createdAt;
+  const updatedAt = data.updatedAt;
+  const totalFileSize = data.totalFileSize; // Passed as string from backend
+  const totalFileCount = data.totalFileCount ?? 0; // Use nullish coalescing for count
+  const status = data.status || 'UNKNOWN';
 
-  // Use fallback values in case keys come in different casing.
-  const _id = data._id || data.Id || 'N/A';
-  const name = data.name || data.Name || 'Untitled Batch';
-  const created_on = data.created_on || data['Created On'];
-  const modified_on = data.modified_on || data['Modified On'];
-  const total_file_size = data.total_file_size || data['Total File Size'];
-  const total_files = data.total_files || data['Total files'];
-  const file_types = data.file_types || data['File Types'];
-  
-  const fileTypes = Array.isArray(file_types) ? file_types.join(', ') : file_types || 'N/A';
-
-  const navigate = useNavigate();
-
-  // Handle open batch
-  const handleOpenBatch = (e) => {
-    e.stopPropagation();
-    onOpen();
-    navigate(`/batch/${_id}`);
+  // Determine status color (example)
+  const getStatusColor = (status) => {
+      switch (status) {
+          case 'COMPLETED': return "text-green-600 dark:text-green-400";
+          case 'PROCESSING': return "text-blue-600 dark:text-blue-400";
+          case 'PENDING':
+          case 'UPLOADED':
+          case 'NEW': return "text-yellow-600 dark:text-yellow-400";
+          case 'FAILED': return "text-red-600 dark:text-red-400";
+          default: return "text-gray-600 dark:text-gray-400";
+      }
   };
+  const statusColor = getStatusColor(status);
 
   return (
-    <div className="relative p-4 md:p-5 bg-slate-50 dark:bg-slate-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
-      {/* Top Row: Batch ID and Open Icon */}
-      <div className="flex items-center justify-between mb-1">
-        <p className="flex items-center gap-2 line-clamp-1 text-base text-gray-500 dark:text-gray-400">
-          <span className='hidden md:flex'>Batch ID: </span>
-          <span className="font-bold truncate">#{_id}</span>
+    // Make the entire card link to the batch details page for better accessibility
+    <Link
+      to={`/batch/${id}`}
+      className="block relative p-4 md:p-5 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 group"
+    >
+      {/* Top Row: Batch ID */}
+      <div className="mb-3">
+        <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <FaHashtag />
+          <span className="font-medium truncate">{id}</span>
         </p>
-        <button
-          type="button"
-          className="hidden md:flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
-          onClick={handleOpenBatch}
-        >
-          <span className="text-xs">Open</span>
-          <IoMdOpen className="text-sm" />
-        </button>
       </div>
 
       {/* Title */}
-      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 line-clamp-1 mb-2 mt-4">
+      {/* Link is now on the parent, so this doesn't need to be a Link itself */}
+      <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 line-clamp-2 mb-3 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
         {name}
       </h3>
 
       {/* Batch Details using MetaText */}
-      <div className="flex flex-col gap-2 mt-5">
-        <MetaText 
-          icon={<LuCalendarDays className="md:hidden text-base" />}
-          title="Uploaded On"
-          value={formatDate(created_on)}
+      <div className="flex flex-col gap-1.5 mb-4">
+        <MetaText
+          icon={<MdOutlineInfo className="text-base" />}
+          title="Status"
+          value={<span className={`font-medium ${statusColor}`}>{status}</span>}
+          textSize="sm"
         />
-        <MetaText 
-          icon={<LuCalendarClock className="md:hidden text-base" />}
-          title="Last Modified"
-          value={formatDate(modified_on)}
+        <MetaText
+          icon={<MdFolderOpen className="text-base" />}
+          title="Files"
+          value={`${totalFileCount} File${totalFileCount !== 1 ? 's' : ''}`} // Handle pluralization
+          textSize="sm"
         />
-        <MetaText 
-          icon={<GrStorage className="md:hidden text-base" />}
-          title="Total File Size"
-          value={total_file_size && total_file_size > 0 
-                    ? (total_file_size / 1024 / 1024).toFixed(2) + ' MB' 
-                    : 'N/A'}
+        <MetaText
+          icon={<GrStorage className="text-base" />}
+          title="Total Size"
+          value={formatBytes(totalFileSize)} // Use the passed formatter
+          textSize="sm"
         />
-        <MetaText 
-          icon={<MdFolderOpen className="md:hidden text-base" />}
-          title="Total Files"
-          value={`${total_files ?? 'N/A'} ${total_files > 1 ? "files" : "file"}`}
+        <MetaText
+          icon={<LuCalendarDays className="text-base" />}
+          title="Created"
+          value={formatDate(createdAt)} // Use the passed formatter
+          textSize="sm"
         />
-        {fileTypes && (
-          <MetaText 
-            icon={<FaRegFileLines className="md:hidden text-base" />}
-            title="File Types"
-            value={fileTypes}
-          />
-        )}
+        <MetaText
+          icon={<LuCalendarClock className="text-base" />}
+          title="Modified"
+          value={formatDate(updatedAt)} // Use the passed formatter
+          textSize="sm"
+        />
+        {/* Removed File Types */}
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-4 w-full flex md:justify-end gap-4">
+      {/* Stop propagation prevents the Link wrapper from navigating when clicking buttons */}
+      <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700 w-full flex flex-col sm:flex-row justify-end gap-3">
         <button
           type="button"
-          className="w-full flex md:hidden items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer"
-          onClick={handleOpenBatch}
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onPreview(data); }} // Prevent Link navigation
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors text-sm"
+          title="Preview documents in this batch"
         >
-          <span className="text-base">Open</span>
-          <IoMdOpen className="text-lg" />
+          <FiEye size={16} /> Preview Docs
         </button>
         <button
           type="button"
-          onClick={onPreview}
-          className="w-full md:w-max hidden md:flex items-center justify-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onExtractData(data); }} // Prevent Link navigation
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 cursor-pointer transition-colors text-sm"
+          title="Extract text from documents in this batch"
         >
-          Preview Docs
-        </button>
-        <button
-          type="button"
-          onClick={onExtractData}
-          className="w-full md:w-max flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 text-gray-100 rounded-md cursor-pointer"
-        >
-          Extract Text
-          <TbTextScan2 className='text-lg' />
+          <TbTextScan2 size={16} /> Extract Text
         </button>
       </div>
-    </div>
+    </Link> // End Link wrapper
   );
 }
 

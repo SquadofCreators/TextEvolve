@@ -14,11 +14,12 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.12",
-    "axios": "^1.8.2",
+    "axios": "^1.8.4",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.6.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.486.0",
+    "nodemailer": "^6.10.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",

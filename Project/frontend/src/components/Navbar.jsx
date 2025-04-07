@@ -97,7 +97,7 @@ function Navbar() {
               className="flex items-center space-x-2 focus:outline-none cursor-pointer"
             >
               <img
-                src={user?.avatar || "https://placehold.co/200x200?text=Te"}
+                src={user?.avatar || `https://placehold.co/200x200?text=${user?.name?.charAt(0)}`}
                 alt="User avatar"
                 className="w-8 h-8 rounded-full border border-orange-500 object-cover"
               />

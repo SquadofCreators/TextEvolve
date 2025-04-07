@@ -17,6 +17,7 @@ import MainLayout from '../layouts/MainLayout';
 import Documentation from '../pages/Documentation';
 import BatchDetails from '../pages/BatchDetails';
 import ExtractTextPage from '../pages/ExtractTextPage';
+import ExtractionResultsPage from '../pages/ExtractionResultsPage';
 
 const protectedRoutes = [
   { path: '/', element: <LandingPage /> },
@@ -29,6 +30,7 @@ const protectedRoutes = [
   { path: '/documentation', element: <Documentation /> },
   { path: '/batch/:batchId', element: <BatchDetails /> },
   { path: '/extract-text/:batchId', element: <ExtractTextPage /> },
+  { path: '/extraction-results/:batchId', element: <ExtractionResultsPage /> },
 ];
 
 function AppRoutes() {
@@ -40,19 +42,16 @@ function AppRoutes() {
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path='/documentation' element={<Documentation />} />
+        <Route path="/documentation" element={<Documentation />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoutes isLoggedIn={isLoggedIn} />}>
           {protectedRoutes.map(({ path, element }) => (
-            <Route
-              key={path}
-              path={path}
-              element={<MainLayout>{element}</MainLayout>}
-            />
+            <Route key={path} path={path} element={<MainLayout>{element}</MainLayout>} />
           ))}
         </Route>
 
+        {/* Catch-all Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

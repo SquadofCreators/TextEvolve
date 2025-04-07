@@ -1,208 +1,186 @@
-import React, { useEffect, useState } from 'react';
-import { FiX, FiChevronLeft, FiChevronRight, FiDownload } from 'react-icons/fi';
-import JSZip from 'jszip';
-
+import React, { useState, useEffect } from 'react';
+import { FiX, FiChevronLeft, FiChevronRight, FiDownload, FiAlertCircle, FiFile } from 'react-icons/fi';
+import JSZip from 'jszip'; // Ensure installed: npm install jszip
 import { BsFileZip } from "react-icons/bs";
+import { batchService } from '../../services/batchService';
+
+
+// Helper function to trigger browser download from a Blob
+const triggerBlobDownload = (blob, filename) => { /* ... as before ... */
+  const url = window.URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.setAttribute('download', filename); document.body.appendChild(link); link.click(); document.body.removeChild(link); window.URL.revokeObjectURL(url);
+};
+
 
 const PreviewModal = ({
-  isOpen,
-  onClose,
-  file,
-  currentPage,
-  totalPages,
-  onPrev,
-  onNext,
-  filesList, // Array of all files for "Download All"
-  showDownloadAll = true, // Show Download All button if more than one document is available
+  isOpen, onClose, file, currentPage, totalPages, onPrev, onNext, filesList, showDownloadAll = true,
 }) => {
-  if (!isOpen || !file) return null;
 
-  const [previewUrl, setPreviewUrl] = useState('');
-  const [downloadUrl, setDownloadUrl] = useState('');
+  const [isZipping, setIsZipping] = useState(false); // Loading state for zip download
 
   useEffect(() => {
-    if (file) {
-      // Directly use the preview_url returned by the backend.
-      setPreviewUrl(file.preview_url || '');
-      setDownloadUrl(file.download_url || '');
-    }
-  }, [file]);
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    if (isOpen) document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
+  if (!isOpen || !file) return null;
+
+  // Determine File Type (Prioritize mimeType)
   const getFileType = (fileObj) => {
-    const type = fileObj.file_type ? fileObj.file_type.toLowerCase() : '';
-    if (type) {
-      if (['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(type)) return 'image';
-      if (type === 'pdf') return 'pdf';
-      if (['doc', 'docx'].includes(type)) return 'doc';
-      if (type === 'txt') return 'text';
-    }
-    const name = fileObj.title || fileObj.filename || '';
-    const ext = name.split('.').pop().toLowerCase();
-    if (['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(ext)) return 'image';
+    const mime = fileObj?.mimeType || '';
+    const name = fileObj?.name || fileObj?.fileName || '';
+    const ext = name.split('.').pop()?.toLowerCase() || '';
+
+    if (mime.startsWith('image/')) return 'image';
+    if (mime === 'application/pdf') return 'pdf';
+    if (mime.includes('wordprocessingml') || mime.includes('msword') || ['doc', 'docx'].includes(ext)) return 'doc';
+    if (mime.startsWith('text/') || ext === 'txt') return 'text';
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(ext)) return 'image';
     if (ext === 'pdf') return 'pdf';
-    if (['doc', 'docx'].includes(ext)) return 'doc';
-    if (ext === 'txt') return 'text';
+
     return 'unknown';
   };
 
   const fileType = getFileType(file);
+  // Use URLs directly from the file prop, assuming parent constructed them correctly
+  const previewUrl = file.preview_url;
+  const downloadUrl = file.download_url || previewUrl;
+  const displayFileName = file.name || file.fileName || `file_${file.id?.substring(0, 6) ?? 'unknown'}`;
 
+  // --- Action Handlers ---
   const handleDownload = () => {
-    const url = downloadUrl || previewUrl;
-    if (!url) {
-      alert('No download URL available.');
+    if (!downloadUrl) {
+      alert('No download URL available for this file.');
       return;
     }
     const link = document.createElement('a');
-    link.href = url;
-    link.download = file.title || file.filename || 'download';
+    link.href = downloadUrl;
+    link.download = displayFileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
+  // handleDownloadAll - UPDATED to use batchService
   const handleDownloadAll = async () => {
-    if (!filesList || filesList.length === 0) {
-      alert('No files available to download.');
-      return;
-    }
+    if (!filesList || filesList.length === 0) { alert('No files available.'); return; }
+    if (isZipping) return; // Prevent concurrent zipping
+
+    setIsZipping(true); // Set loading state
+    setPreviewError(null); // Clear previous errors if displaying them
+    console.log("Starting Download All via Blob Service...");
+    // User feedback - maybe use a less intrusive method than alert later
+    // alert("Preparing ZIP file... This may take a moment.");
 
     const zip = new JSZip();
-    const folder = zip.folder('Documents');
+    const folderName = file.batchName || "Documents"; // Requires batchName passed in file prop
+    const folder = zip.folder(folderName);
+    let failedFiles = [];
 
-    const fetchFile = async (fileObj) => {
-      try {
-        const url = fileObj.download_url || fileObj.preview_url;
-        const response = await fetch(url);
-        const blob = await response.blob();
-        folder.file(fileObj.title || fileObj.filename, blob);
-      } catch (error) {
-        console.error(`Error downloading ${fileObj.title || fileObj.filename}:`, error);
-      }
-    };
-
-    await Promise.all(filesList.map(fetchFile));
-
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = 'All_Documents.zip';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    // Use Promise.allSettled to attempt downloading all blobs via the service
+    const downloadPromises = filesList.map(async (fileObj) => {
+        const filenameToUse = fileObj.name || fileObj.fileName || `file_${fileObj.id}`;
+        // Make sure each fileObj in filesList has batchId and id
+        if (!fileObj.batchId || !fileObj.id) {
+            console.warn(`Skipping ${filenameToUse}: Missing batchId or docId.`);
+            failedFiles.push(`${filenameToUse} (Missing ID)`);
+            return Promise.resolve(); // Resolve promise for this file
+        }
+        try {
+            const blob = await batchService.downloadDocumentBlob(fileObj.batchId, fileObj.id);
+            folder.file(filenameToUse, blob);
+            console.log(`Added ${filenameToUse} to zip.`);
+        } catch (error) {
+            console.error(`Error fetching blob for ${filenameToUse}:`, error);
+            failedFiles.push(`${filenameToUse} (${error.message || 'Fetch Failed'})`);
+        }
     });
+
+    await Promise.allSettled(downloadPromises);
+    console.log("Blob fetching complete. Generating zip...");
+
+    if (Object.keys(folder.files).length === 0) {
+        alert("Failed to fetch any files for the ZIP archive. Please check console for errors.");
+        setIsZipping(false);
+        return;
+    }
+
+    try {
+        const content = await zip.generateAsync({ type: 'blob' }, (metadata) => {
+             // Optional: Update progress state here if needed
+             // console.log("Zipping progress: " + metadata.percent.toFixed(2) + " %");
+        });
+        const zipFilename = `${folderName.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.zip`;
+        triggerBlobDownload(content, zipFilename); // Use helper
+        console.log("Zip download triggered.");
+        if (failedFiles.length > 0) {
+            // Use a less intrusive notification method ideally
+            alert(`ZIP download started. Failed to include ${failedFiles.length} file(s):\n- ${failedFiles.join('\n- ')}`);
+        }
+    } catch (zipError) {
+         console.error("Error generating zip file:", zipError);
+         alert("Failed to generate the ZIP file.");
+    } finally {
+         setIsZipping(false); // Reset loading state
+    }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black opacity-80" onClick={onClose}></div>
 
+  // --- Render ---
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-2 md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       {/* Modal Container */}
-      <div className="relative z-10 bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl h-auto max-h-[90vh] overflow-hidden">
+      <div className="relative z-[1000] bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-auto max-h-[95vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200 truncate">
-            {file.title || file.filename || 'Preview File'}
-          </h2>
-          <div className="flex items-center md:gap-4">
-            <button
-              onClick={handleDownload}
-              title="Download File"
-              className="flex items-center gap-2 text-blue-500 hover:text-gray-100 hover:bg-blue-500 px-3 py-2 rounded-lg transition cursor-pointer"
-            >
-              <FiDownload className="w-5 h-5" />
-              <span className='hidden md:flex'>Download</span>
-            </button>
-            {showDownloadAll && filesList && filesList.length > 1 && (
-              <button
-                onClick={handleDownloadAll}
-                title="Download All as Zip"
-                className="flex items-center gap-2 text-green-500 hover:text-gray-100 hover:bg-green-500 px-3 py-2 rounded-lg transition cursor-pointer"
-              >
-                <BsFileZip className="w-5 h-5" />
-                <span className='hidden md:flex'>Download Zip</span>
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              title="Close Preview"
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1.5 transition cursor-pointer"
-            >
-              <FiX className="w-6 h-6" />
-            </button>
-          </div>
+        <div className="flex-shrink-0 p-4 md:p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2">
+           <h2 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 truncate" title={displayFileName}>
+             {displayFileName}
+           </h2>
+           {/* Action Buttons */}
+           <div className="flex items-center flex-shrink-0 gap-2 md:gap-3">
+                <button onClick={handleDownload} title="Download File" disabled={!downloadUrl} className="flex items-center gap-1.5 text-orange-600 hover:text-white dark:text-orange-400 dark:hover:text-white hover:bg-orange-600 dark:hover:bg-orange-500 px-2 py-1.5 rounded-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm"><FiDownload className="w-4 h-4" /><span className='hidden md:inline'>Download</span></button>
+                {showDownloadAll && filesList && filesList.length > 1 && (<button onClick={handleDownloadAll} title="Download All as Zip" className="flex items-center gap-1.5 text-green-600 hover:text-white dark:text-green-400 dark:hover:text-white hover:bg-green-600 dark:hover:bg-green-500 px-2 py-1.5 rounded-md transition-colors cursor-pointer text-sm"><BsFileZip className="w-4 h-4" /><span className='hidden md:inline'>Download All (.zip)</span></button>)}
+                <button onClick={onClose} title="Close Preview (Esc)" className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-1.5 transition-colors cursor-pointer"><FiX className="w-5 h-5" /></button>
+           </div>
         </div>
 
         {/* Preview Area */}
-        <div className="p-6 flex-1 overflow-auto flex items-center justify-center">
-          {fileType === 'image' ? (
-            previewUrl ? (
-              <img
-                src={previewUrl}
-                alt={file.title || file.filename}
-                className="max-w-full h-[60vh] object-contain rounded"
-              />
-            ) : (
-              <div className="text-gray-700 dark:text-gray-300">No preview available.</div>
-            )
+        <div className="p-2 md:p-4 flex-1 overflow-auto flex items-center justify-center bg-gray-100 dark:bg-gray-900 min-h-[50vh]">
+          {!previewUrl ? (
+             <div className="text-center p-10"> <FiAlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" /> <p className="text-gray-600 dark:text-gray-400">No preview URL available.</p> </div>
+          ) : fileType === 'image' ? (
+              <img src={previewUrl} alt={displayFileName} className="max-w-full max-h-[75vh] object-contain rounded shadow-md"/>
           ) : fileType === 'pdf' ? (
-            previewUrl ? (
-              <iframe
-                src={previewUrl}
-                className="w-full min-h-[60vh] rounded"
-                title="PDF Preview"
-              />
-            ) : (
-              <div className="text-gray-700 dark:text-gray-300">No preview available.</div>
-            )
+              // Added title attribute for accessibility
+              <iframe src={previewUrl} className="w-full h-full min-h-[75vh] rounded border-none" title={`PDF Preview: ${displayFileName}`}/>
           ) : fileType === 'doc' ? (
-            previewUrl ? (
-              <iframe
-                src={`https://docs.google.com/gview?url=${encodeURIComponent(previewUrl)}&embedded=true`}
-                className="w-full min-h-[60vh] rounded"
-                title="Document Preview"
-              />
-            ) : (
-              <div className="text-gray-700 dark:text-gray-300">No preview available.</div>
-            )
+               <div className="text-center p-6 bg-yellow-50 dark:bg-yellow-900/30 rounded-md border border-yellow-200 dark:border-yellow-700">
+                  <FiAlertCircle className="mx-auto h-8 w-8 text-yellow-600 dark:text-yellow-400 mb-3" />
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2"> Direct preview for Word documents requires the file to be publicly accessible by Google and may be unreliable. </p>
+                  <iframe src={`https://docs.google.com/gview?url=${encodeURIComponent(previewUrl)}&embedded=true`} className="w-full h-[60vh] rounded border mt-2" title={`Document Preview: ${displayFileName}`} sandbox="allow-scripts allow-same-origin"/>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2">If preview fails, please use the Download button.</p>
+               </div>
           ) : fileType === 'text' ? (
-            <div className="w-full h-[60vh] p-4 overflow-y-auto bg-gray-100 dark:bg-gray-700 rounded">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
-                {file.extracted_content || 'Text preview not available.'}
-              </pre>
-            </div>
+               <div className="w-full h-full max-h-[75vh] p-4 overflow-y-auto bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                 <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200 font-mono">
+                     {(file.extracted_content !== null && file.extracted_content !== undefined && file.extracted_content !== '') ? file.extracted_content : <span className="italic text-gray-500 dark:text-gray-400">No text content available for preview.</span>}
+                 </pre>
+               </div>
           ) : (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-gray-700 dark:text-gray-300">
-                🔴 Preview not available for this file type.
-              </p>
-            </div>
+               <div className="text-center p-10"> <FiFile className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" /> <p className="text-gray-600 dark:text-gray-400">Preview not available for this file type.</p> <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">({displayFileName})</p> <button onClick={handleDownload} className="mt-4 text-sm text-orange-600 dark:text-orange-400 hover:underline"> Download File </button> </div>
           )}
         </div>
 
-        {/* Pagination & Footer */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <button
-            onClick={onPrev}
-            disabled={currentPage === 0}
-            className="flex items-center gap-2 text-orange-500 hover:underline disabled:opacity-50 cursor-pointer"
-          >
-            <FiChevronLeft className="w-5 h-5" />
-            Previous
-          </button>
-          <span className="text-gray-500 dark:text-gray-400">
-            Page {currentPage + 1} of {totalPages}
-          </span>
-          <button
-            onClick={onNext}
-            disabled={currentPage === totalPages - 1}
-            className="flex items-center gap-2 text-orange-500 hover:underline disabled:opacity-50 cursor-pointer"
-          >
-            Next
-            <FiChevronRight className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Footer & Pagination */}
+        {totalPages > 1 && (
+           <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">
+             <button onClick={onPrev} disabled={currentPage === 0} className="flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"><FiChevronLeft className="w-4 h-4" />Previous</button>
+             <span className="text-gray-500 dark:text-gray-400">{currentPage + 1} / {totalPages}</span>
+             <button onClick={onNext} disabled={currentPage >= totalPages - 1} className="flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed">Next<FiChevronRight className="w-4 h-4" /></button>
+           </div>
+        )}
       </div>
     </div>
   );
