@@ -58,6 +58,17 @@ function Navbar() {
   // Call navLinks as a function (if it requires handleLogout) and filter by showOnMobile
   const links = navLinks(handleLogout).filter(item => item.showOnMobile);
 
+  // Helper function to get the avatar source.
+  // If a profile picture URL is available, it constructs the full URL using VITE_API_URL_IMAGE_BASE.
+  // Otherwise, it falls back to a placeholder image based on the user's initial.
+  const getAvatarSrc = () => {
+    if (user?.profilePictureUrl) {
+      return import.meta.env.VITE_API_URL_IMAGE_BASE + user.profilePictureUrl;
+    }
+    // Fallback image: placeholder with user's initial (or default 'U')
+    return `https://placehold.co/200x200?text=${user?.name?.charAt(0) || 'U'}`;
+  };
+
   return (
     <header className="sticky top-0 w-full z-50 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 shadow transition-colors">
       {/* Top Bar (Desktop & Mobile) */}
@@ -97,8 +108,9 @@ function Navbar() {
               className="flex items-center space-x-2 focus:outline-none cursor-pointer"
             >
               <img
-                src={user?.avatar || `https://placehold.co/200x200?text=${user?.name?.charAt(0)}`}
+                src={getAvatarSrc()}
                 alt="User avatar"
+                crossOrigin="anonymous"
                 className="w-8 h-8 rounded-full border border-orange-500 object-cover"
               />
               <div className="leading-tight text-left">
@@ -164,9 +176,9 @@ function Navbar() {
               onClick={handleProfile}
             >
               <img
-                src={user?.avatar || "https://placehold.co/200x200?text=Te"}
+                src={getAvatarSrc()}
                 alt="User avatar"
-                className="w-10 h-10 rounded-full border border-orange-500"
+                className="w-10 h-10 rounded-full border border-orange-500 object-cover"
               />
               <div>
                 <p className="font-semibold truncate max-w-[15ch]">{user?.name}</p>

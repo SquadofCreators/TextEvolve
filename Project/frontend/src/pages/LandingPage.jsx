@@ -175,7 +175,7 @@ function LandingPage() {
             <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 select-none shadow-lg mb-8">
                 {/* Banner content exactly as you provided */}
                  <img src={BannerImg} alt="Banner" className="object-cover w-full h-56 md:h-64"/>
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent dark:from-black/70 dark:via-black/30"></div>
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent dark:from-black/70 dark:via-black/30"></div>
                  <div className="absolute inset-0 flex flex-col items-center justify-between py-6 px-4 gap-3 text-white">
                    <div className="flex items-center justify-center flex-wrap gap-6 md:gap-8 filter drop-shadow"> {bannerLogos.map((logo, index) => ( <a key={index} href={logo.link} target="_blank" rel="noopener noreferrer" className="opacity-90 hover:opacity-100 transition-opacity"><img src={logo.logo} alt={logo.name} className="w-10 h-10 md:w-12 md:h-12" /></a> ))}</div>
                    <div className="text-center filter drop-shadow-lg"><h1 className="text-3xl md:text-4xl font-bold"> Digitize <span className="text-orange-400">History,</span> <br /> Empower the Future </h1><p className="hidden md:block text-base text-gray-200 mt-2 max-w-2xl mx-auto"> Transform your handwritten records and archival documents into accessible, searchable digital formats with our advanced AI-powered OCR solution. </p></div>

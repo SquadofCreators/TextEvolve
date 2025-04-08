@@ -5,7 +5,7 @@ const AUTH_TOKEN_KEY = 'authToken';
 
 // Create an Axios instance
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api', // Fallback URL
+  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api', // Fallback URL
   headers: {
     'Content-Type': 'application/json',
   },

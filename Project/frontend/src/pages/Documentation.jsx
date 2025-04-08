@@ -149,7 +149,7 @@ function Documentation() {
         />
 
         {/* Language Toggle Bar */}
-        <div className="flex justify-end mb-4 space-x-2">
+        <div className="flex justify-center mb-4 space-x-2">
           <button
             onClick={() => setLanguage("en")}
             className={`px-4 py-2 rounded ${
