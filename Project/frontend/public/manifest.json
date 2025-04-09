@@ -1,0 +1,74 @@
+{
+    "name": "TextEvolve",
+    "short_name": "TextEvolve",
+    "description": "Digitize handwritten and old registered documents into PDF and Word using AI and OCR.",
+    "start_url": "/TextEvolve/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ff6900",
+    "orientation": "portrait-primary",
+    "icons": [
+      {
+        "src": "/TextEvolve/icons/textevolve-144x144.png",
+        "sizes": "144x144",
+        "type": "image/png"
+      },
+      {
+        "src": "/TextEvolve/icons/textevolve-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "/TextEvolve/icons/textevolve-256x256.png",
+        "sizes": "256x256",
+        "type": "image/png"
+      },
+      {
+        "src": "/TextEvolve/icons/textevolve-384x384.png",
+        "sizes": "384x384",
+        "type": "image/png"
+      },
+      {
+        "src": "/TextEvolve/icons/textevolve-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      },
+      {
+        "src": "/TextEvolve/icons/textevolve-1024x1024.png",
+        "sizes": "1024x1024",
+        "type": "image/png"
+      },
+      {
+        "src": "/TextEvolve/textevolve-logo.svg",
+        "sizes": "any",
+        "type": "image/svg+xml",
+        "purpose": "maskable"
+      }
+    ],
+    "related_applications": [
+      {
+        "platform": "web",
+        "url": "https://squadofcreators.github.io/TextEvolve/"
+      }
+    ],
+    "categories": [
+      "productivity",
+      "business",
+      "utilities"
+    ],
+    "screenshots": [
+      {
+        "src": "/screenshots/textevolve-dashboard-light.png",
+        "type": "image/png",
+        "sizes": "1080x1920"
+      },
+      {
+        "src": "/screenshots/textevolve-dashboard-dark.png",
+        "type": "image/png",
+        "sizes": "1080x1920"
+      }
+    ],
+    "scope": "/",
+    "id": "/"
+  }
+  
