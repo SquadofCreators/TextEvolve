@@ -55,8 +55,8 @@ model Batch {
   accuracy           Float?
   precision          Float?
   loss               Float?
-  totalWordCount       Int?
-  totalCharacterCount  Int?
+  wordCount          Int?
+  characterCount     Int?
 
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
