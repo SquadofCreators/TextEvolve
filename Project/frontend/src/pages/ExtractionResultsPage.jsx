@@ -268,7 +268,7 @@ const ExtractionResultsPage = () => {
     <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
       <PageHeader title="Extraction Results" showBackArrow={true} backPath={`/batch/${batchId}`} />
 
-      {/* Batch Info Header */}
+      {/* Batch Info Header  */}
       <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2 break-words">
              {batch.name || `Batch ${batch.id}`}
