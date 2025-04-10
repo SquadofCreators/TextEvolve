@@ -142,16 +142,18 @@ const ExtractionResultsPage = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-center p-4">
-         <FiLoader className="animate-spin h-10 w-10 text-orange-500 mb-4" />
-         <p className="text-gray-500 dark:text-gray-400">Loading extraction results...</p>
+      <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <div className='flex flex-col items-center justify-center h-full'>
+          <FiLoader className="animate-spin h-10 w-10 text-orange-500 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Loading extraction results...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-center p-4">
+      <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
          <FiAlertTriangle className="h-12 w-12 text-red-500 mb-4" />
          <p className="text-red-600 dark:text-red-400 font-semibold mb-2">Error Loading Results</p>
          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
@@ -167,7 +169,7 @@ const ExtractionResultsPage = () => {
 
    if (!batch) {
       return (
-         <div className="flex justify-center items-center h-screen">
+         <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
             <p className="text-gray-500 dark:text-gray-400">Batch data could not be loaded.</p>
          </div>
       );
@@ -176,7 +178,7 @@ const ExtractionResultsPage = () => {
    // Check Batch Status
    if (batch.status !== 'COMPLETED' && batch.status !== 'FAILED') {
        return (
-         <div className="flex flex-col justify-center items-center h-full text-center p-4">
+         <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
              <FiInfo className="h-12 w-12 text-orange-500 mb-4" />
              <p className="text-orange-600 dark:text-orange-400 font-semibold mb-2">Extraction Not Complete</p>
              <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -196,7 +198,7 @@ const ExtractionResultsPage = () => {
 
    // --- Main Results Display ---
   return (
-    <div className="flex-1 h-full px-2 py-6 md:p-6 bg-gray-100 dark:bg-gray-900 rounded-lg">
+    <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
       <PageHeader title="Extraction Results" showBackArrow={true} backPath={`/batch/${batchId}`} />
 
       {/* Batch Info Header */}

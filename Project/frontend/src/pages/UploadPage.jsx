@@ -245,16 +245,16 @@ function UploadPage() {
   // Helper for icon based on file type (simplified)
   const getFileTypeIcon = (file) => {
     const type = file?.type || '';
-    if (type.startsWith('image/')) return <FiImage className="w-8 h-8 text-indigo-500" />;
+    if (type.startsWith('image/')) return <FiImage className="w-8 h-8 text-orange-500" />;
     if (type === 'application/pdf') return <FiFileText className="w-8 h-8 text-red-500" />;
-    if (type.includes('word')) return <FiFileText className="w-8 h-8 text-blue-500" />;
+    if (type.includes('word')) return <FiFileText className="w-8 h-8 text-orange-500" />;
     return <FiFile className="w-8 h-8 text-gray-500" />;
   };
 
   // --- Render ---
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+    <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 text-center mb-6">
           Create New Batch & Upload Documents
@@ -274,7 +274,7 @@ function UploadPage() {
               value={batchName}
               onChange={(e) => setBatchName(e.target.value)}
               placeholder="e.g., 'Historical Records Q1' or 'Meeting Notes April'"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               disabled={isUploading}
             />
           </div>
@@ -284,7 +284,7 @@ function UploadPage() {
             {...getRootProps()}
             className={`p-8 md:p-12 border-2 border-dashed rounded-lg text-center cursor-pointer select-none transition-colors duration-200 ease-in-out ${
               isDragActive
-                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30'
                 : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
             }`}
           >
@@ -331,7 +331,7 @@ function UploadPage() {
                             type="text"
                             value={item.title}
                             onChange={(e) => renameFile(index, e.target.value)}
-                            className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-none w-full"
+                            className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate bg-transparent border-b border-transparent focus:border-orange-500 focus:outline-none w-full"
                             disabled={isUploading}
                             title={item.title} // Show full name on hover
                          />
@@ -358,7 +358,7 @@ function UploadPage() {
                   className={`px-6 py-2 rounded-lg text-white font-medium transition duration-200 flex items-center justify-center gap-2 ${
                     isUploading || !batchName.trim()
                       ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-indigo-600 hover:bg-indigo-700'
+                      : 'bg-orange-600 hover:bg-orange-700'
                   }`}
                 >
                   {isUploading ? (
@@ -384,7 +384,7 @@ function UploadPage() {
             <div className={`mt-4 text-center p-3 rounded-md text-sm ${
               uploadStatus.type === 'success' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' :
               uploadStatus.type === 'error' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' :
-              uploadStatus.type === 'loading' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' :
+              uploadStatus.type === 'loading' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' :
               'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
             }`}>
               {uploadStatus.type === 'success' && <FiCheckCircle className="inline mr-2 mb-0.5"/>}
@@ -423,7 +423,7 @@ function UploadPage() {
                 {!isLoggedIn && (
                     <button
                         onClick={() => navigate('/login')}
-                        className="mt-3 px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm"
+                        className="mt-3 px-3 py-1 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition text-sm"
                     >
                         Go to Login
                     </button>
@@ -433,7 +433,7 @@ function UploadPage() {
             <ul className="space-y-3">
               {batches.map((batch) => (
                 <li key={batch.id} className={`flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg transition-colors duration-300 ${
-                  batch.id === createdBatchId ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                  batch.id === createdBatchId ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}>
                   <div className="flex-grow mb-2 sm:mb-0">
                     <Link to={`/batch/${batch.id}`} className="hover:underline">
