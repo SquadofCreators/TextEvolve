@@ -2,19 +2,15 @@
 
 import prisma from '../config/db.js';
 import { deleteLocalFile } from '../middleware/uploadMiddleware.js';
-import { Prisma, Status } from '@prisma/client'; // Import Prisma namespace and Status enum
+import { Prisma, Status } from '@prisma/client'; 
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 // Get __dirname equivalent in ES Modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Define the robust default path calculation
+const __dirname = path.dirname(__filename); 
 const defaultUploadDirPath = path.resolve(__dirname, '..', '..', 'uploads');
-
-// Define Frontend URL (used for CORS header) - ensure this matches your .env or actual URL
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Helper to convert BigInt fields for JSON response
@@ -44,6 +40,14 @@ const formatDocumentResponse = (doc) => {
      return response;
 }
 
+// Helper function for safe number conversion
+const parseNumberOrNull = (value) => {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    const num = Number(value);
+    return isNaN(num) ? null : num;
+};
 
 // --- Batch CRUD ---
 
@@ -420,90 +424,69 @@ export const deleteDocumentFromBatch = async (req, res, next) => {
 // @access  Private (or internal service)
 export const updateDocumentResults = async (req, res, next) => {
     const { batchId, docId } = req.params;
-    // Destructure new fields from body
     const { extractedContent, accuracy, precision, loss, status, wordCount, characterCount } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
+    // Input Validation
     if (status !== undefined && !(status in Status)) {
         res.status(400);
         return next(new Error(`Invalid status value. Must be one of: ${Object.keys(Status).join(', ')}`));
     }
 
     try {
-        // Find document & verify ownership (no changes needed)
+        // Authorization & Existence Check
         const document = await prisma.document.findUnique({
             where: { id: docId },
             select: {
                 id: true,
-                batch: { select: { id: true, userId: true } } // Select batch info for checks
+                batch: { select: { id: true, userId: true } }
             }
         });
-        // Check if document exists
+
         if (!document) {
-            res.status(404);
-            return next(new Error('Document not found.'));
+            res.status(404); return next(new Error('Document not found.'));
         }
-
-        // Check if document belongs to the correct batch
         if (document.batch.id !== batchId) {
-            res.status(400); // Bad Request - mismatch
-            return next(new Error('Document does not belong to the specified batch.'));
+            res.status(400); return next(new Error('Document does not belong to the specified batch.'));
         }
-
-        // Check ownership if userId is available (adjust if internal services call this without user context)
         if (userId && document.batch.userId !== userId) {
-            res.status(403);
-            return next(new Error('Not authorized to update this document.'));
+            res.status(403); return next(new Error('Not authorized to update this document.'));
         }
 
-        // --- Prepare Data for Update ---
+        // Prepare Data for Update
         const dataToUpdate = {};
-        
-        // Only add fields to the update object if they were actually provided in the request body
-        if (extractedContent !== undefined) dataToUpdate.extractedContent = extractedContent; // Keep null/string
+        if (extractedContent !== undefined) dataToUpdate.extractedContent = extractedContent;
         if (status !== undefined) dataToUpdate.status = status;
-
-        // Use the safe parser for numeric fields
+        // Use the HELPER function (now defined above)
         if (accuracy !== undefined) dataToUpdate.accuracy = parseNumberOrNull(accuracy);
         if (precision !== undefined) dataToUpdate.precision = parseNumberOrNull(precision);
         if (loss !== undefined) dataToUpdate.loss = parseNumberOrNull(loss);
-        if (wordCount !== undefined) dataToUpdate.wordCount = parseNumberOrNull(wordCount); // Ensure Int? handles null
-        if (characterCount !== undefined) dataToUpdate.characterCount = parseNumberOrNull(characterCount); // Ensure Int? handles null
+        if (wordCount !== undefined) dataToUpdate.wordCount = parseNumberOrNull(wordCount);
+        if (characterCount !== undefined) dataToUpdate.characterCount = parseNumberOrNull(characterCount);
 
-        // Check if there's anything to update
         if (Object.keys(dataToUpdate).length === 0) {
-            return res.status(400).json({ message: "No valid fields provided for update." });
+             return res.status(400).json({ message: "No valid fields provided for update." });
         }
-
-        // Add updatedAt timestamp update
         dataToUpdate.updatedAt = new Date();
 
-         // --- Perform Update ---
-         const updatedDoc = await prisma.document.update({
+        // Perform Update
+        const updatedDoc = await prisma.document.update({
             where: { id: docId },
             data: dataToUpdate,
-            select: { // Select fields needed for the response
+            select: {
                 id: true, status: true, accuracy: true, precision: true, loss: true,
                 wordCount: true, characterCount: true, updatedAt: true,
             }
         });
 
-        // trigger batch aggregation here?
-        if (status === 'COMPLETED' || status === 'FAILED') {
-           triggerBatchAggregation(batchId); // Fire-and-forget or await
-        }
-        
         console.log(`Successfully updated results for document ${docId} in batch ${batchId}`);
         res.status(200).json(formatDocumentResponse(updatedDoc));
 
-    } catch (error) { 
+    } catch (error) {
         console.error(`Error updating results for document ${docId} in batch ${batchId}:`, error);
-        // Check for specific Prisma errors if needed
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            // Example: Foreign key violation, unique constraint etc.
-             console.error("Prisma Error Code:", error.code);
+        if (error instanceof ReferenceError) { // Specifically catch this type if needed
+             console.error("Potential issue: A function might not be defined before use.");
         }
-        // Pass error to the central error handler
         next(error);
     }
 };
