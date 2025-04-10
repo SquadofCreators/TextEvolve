@@ -1,3 +1,5 @@
+// src/services/apiConfig.js
+
 import axios from 'axios';
 
 // Define the key used to store the auth token in local storage
@@ -37,7 +39,7 @@ apiClient.interceptors.response.use(
   (response) => {
     // Any status code that lie within the range of 2xx cause this function to trigger
     // Return the data part of the response
-    return response.data;
+    return response;
   },
   (error) => {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
@@ -84,4 +86,4 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-export { AUTH_TOKEN_KEY }; // Export key for use in auth logic
+export { AUTH_TOKEN_KEY }; 

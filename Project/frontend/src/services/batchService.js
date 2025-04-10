@@ -1,153 +1,101 @@
-// src/services/batchService.js
-
+// src/services/batchService.js - UPDATED
 import apiClient from './apiConfig';
 
-// --- Batch Operations ---
-
-/**
- * Creates a new batch.
- * @param {string} name - The name for the new batch.
- * @returns {Promise<object>} The newly created batch object.
- */
 const createBatch = async (name) => {
-  return apiClient.post('/batches', { name });
+    const response = await apiClient.post('/batches', { name });
+    return response.data; // <-- Add .data
 };
 
-/**
- * Fetches all batches belonging to the current user.
- * @returns {Promise<Array<object>>} An array of batch objects.
- */
 const getMyBatches = async () => {
-  return apiClient.get('/batches');
+    const response = await apiClient.get('/batches');
+    return response.data; // <-- Add .data
 };
 
-/**
- * Fetches a specific batch by its ID, including its documents.
- * @param {string} batchId - The ID of the batch to fetch.
- * @returns {Promise<object>} The batch object with associated documents.
- */
 const getBatchById = async (batchId) => {
-  if (!batchId) throw new Error('Batch ID is required');
-  return apiClient.get(`/batches/${batchId}`);
+    if (!batchId) throw new Error('Batch ID is required');
+    const response = await apiClient.get(`/batches/${batchId}`);
+    return response.data; // <-- Add .data
 };
 
-/**
- * Updates details of a specific batch.
- * @param {string} batchId - The ID of the batch to update.
- * @param {object} batchData - Data to update (e.g., { name: "New Name", status: "PROCESSING" }).
- * @returns {Promise<object>} The updated batch object.
- */
 const updateBatch = async (batchId, batchData) => {
-  if (!batchId) throw new Error('Batch ID is required');
-  return apiClient.put(`/batches/${batchId}`, batchData);
+    if (!batchId) throw new Error('Batch ID is required');
+    const response = await apiClient.put(`/batches/${batchId}`, batchData);
+    return response.data; // <-- Add .data
 };
 
-/**
- * Deletes a specific batch and its associated documents/files.
- * @param {string} batchId - The ID of the batch to delete.
- * @returns {Promise<object>} Success message.
- */
 const deleteBatch = async (batchId) => {
-  if (!batchId) throw new Error('Batch ID is required');
-  return apiClient.delete(`/batches/${batchId}`);
+    if (!batchId) throw new Error('Batch ID is required');
+    const response = await apiClient.delete(`/batches/${batchId}`);
+    return response.data; // <-- Add .data (usually just a success message object)
 };
 
-// --- Document Operations within a Batch ---
-
-/**
- * Uploads one or more documents to a specific batch.
- * @param {string} batchId - The ID of the target batch.
- * @param {FileList | Array<File>} files - The file(s) to upload.
- * @returns {Promise<object>} Response containing success message and updated batch info.
- */
 const uploadDocuments = async (batchId, files) => {
-  if (!batchId) throw new Error('Batch ID is required');
-  if (!files || files.length === 0) throw new Error('At least one file is required');
-
-  const formData = new FormData();
-  // Append each file with the key expected by the backend ('documents')
-  for (let i = 0; i < files.length; i++) {
-    formData.append('documents', files[i]);
-  }
-
-  // Axios instance handles Content-Type header for FormData
-  return apiClient.post(`/batches/${batchId}/documents`, formData);
+    if (!batchId) throw new Error('Batch ID is required');
+    if (!files || files.length === 0) throw new Error('At least one file is required');
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+        formData.append('documents', files[i]);
+    }
+    const response = await apiClient.post(`/batches/${batchId}/documents`, formData);
+    return response.data; // <-- Add .data
 };
 
-/**
- * Deletes a specific document from a batch.
- * @param {string} batchId - The ID of the batch containing the document.
- * @param {string} docId - The ID of the document to delete.
- * @returns {Promise<object>} Response containing success message and updated batch info.
- */
 const deleteDocument = async (batchId, docId) => {
-  if (!batchId || !docId) throw new Error('Batch ID and Document ID are required');
-  return apiClient.delete(`/batches/${batchId}/documents/${docId}`);
+    if (!batchId || !docId) throw new Error('Batch ID and Document ID are required');
+    const response = await apiClient.delete(`/batches/${batchId}/documents/${docId}`);
+    return response.data; // <-- Add .data
 };
 
-/**
- * Updates the processing results for a specific document.
- * @param {string} batchId - The ID of the batch containing the document.
- * @param {string} docId - The ID of the document to update.
- * @param {object} resultsData - Data containing results (e.g., { status, extractedContent, accuracy, precision, loss }).
- * @returns {Promise<object>} The updated document status/metrics.
- */
 const updateDocumentResults = async (batchId, docId, resultsData) => {
-  if (!batchId || !docId) throw new Error('Batch ID and Document ID are required');
-  return apiClient.put(`/batches/${batchId}/documents/${docId}/results`, resultsData);
+    if (!batchId || !docId) throw new Error('Batch ID and Document ID are required');
+    const response = await apiClient.put(`/batches/${batchId}/documents/${docId}/results`, resultsData);
+    return response.data; // <-- Add .data
 };
 
-// --- Batch Aggregation ---
-
-/**
- * Triggers the aggregation of metrics for a specific batch.
- * @param {string} batchId - The ID of the batch to aggregate.
- * @returns {Promise<object>} Response containing success message and aggregated metrics.
- */
 const aggregateBatchMetrics = async (batchId) => {
-  if (!batchId) throw new Error('Batch ID is required');
-  return apiClient.put(`/batches/${batchId}/aggregate-metrics`);
+    if (!batchId) throw new Error('Batch ID is required');
+    const response = await apiClient.put(`/batches/${batchId}/aggregate-metrics`);
+    return response.data; // <-- Add .data
 };
 
-/**
- * Gets the API URL path for previewing a document.
- * This URL will be used directly in img src or iframe src.
- * @param {string} batchId - The ID of the batch.
- * @param {string} docId - The ID of the document.
- * @returns {string} The relative API URL path for preview.
- */
+// This returns a URL path string, not an API response object, so it stays the same
 const getPreviewApiUrl = (batchId, docId) => {
-  if (!batchId || !docId) return '';
-  // Return relative path - apiClient adds the base URL and token
-  return `/batches/${batchId}/documents/${docId}/preview`;
+    if (!batchId || !docId) return '';
+    return `/batches/${batchId}/documents/${docId}/preview`;
 };
 
-/**
-* Fetches a document file as a blob for manual download triggering.
-* @param {string} batchId - The ID of the batch.
-* @param {string} docId - The ID of the document.
-* @returns {Promise<Blob>} A promise resolving to the file blob.
-*/
+// This expects a blob, Axios handles responseType:'blob' correctly,
+// the interceptor might interfere slightly but usually works,
+// let's assume it returns the blob directly. If issues arise, revisit.
 const downloadDocumentBlob = async (batchId, docId) => {
-  if (!batchId || !docId) throw new Error('Batch ID and Document ID are required');
-  // Make request expecting a Blob response
-  return apiClient.get(`/batches/${batchId}/documents/${docId}/download`, {
-      responseType: 'blob', // Important: Tell axios to expect binary data
-  });
-  // Note: The actual download trigger happens in the component after getting the blob
+    if (!batchId || !docId) throw new Error('Batch ID is required');
+    // The interceptor returning response.data might actually be okay here if
+    // axios automatically makes response.data the blob when responseType is 'blob'.
+    // Let's assume the previous code worked. If not, adjust error handling.
+    try {
+        const response = await apiClient.get(`/batches/${batchId}/documents/${docId}/download`, {
+             responseType: 'blob',
+        });
+         // If interceptor returns full response, access response.data (the blob)
+         // If interceptor returns response.data (the blob), this still works
+        return response.data || response;
+    } catch (error) {
+        console.error("Error downloading blob:", error);
+        throw error;
+    }
 };
 
 
 export const batchService = {
-  createBatch,
-  getMyBatches,
-  getBatchById,
-  updateBatch,
-  deleteBatch,
-  uploadDocuments,
-  deleteDocument, 
-  updateDocumentResults,
-  aggregateBatchMetrics,
-  getPreviewApiUrl,
-  downloadDocumentBlob,
+    createBatch,
+    getMyBatches,
+    getBatchById,
+    updateBatch,
+    deleteBatch,
+    uploadDocuments,
+    deleteDocument,
+    updateDocumentResults,
+    aggregateBatchMetrics,
+    getPreviewApiUrl,
+    downloadDocumentBlob,
 };
