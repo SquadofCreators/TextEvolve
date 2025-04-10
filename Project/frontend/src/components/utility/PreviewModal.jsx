@@ -151,7 +151,7 @@ const PreviewModal = ({
           {!previewUrl ? (
              <div className="text-center p-10"> <FiAlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" /> <p className="text-gray-600 dark:text-gray-400">No preview URL available.</p> </div>
           ) : fileType === 'image' ? (
-              <img src={previewUrl} alt={displayFileName} crossOrigin="anonymous" className="max-w-full w-full object-contain rounded shadow-md"/>
+              <img src={previewUrl} alt={displayFileName} crossOrigin="anonymous" className="max-w-2xl w-full object-contain rounded shadow-md"/>
           ) : fileType === 'pdf' ? (
               // Added title attribute for accessibility
               <iframe src={previewUrl} crossOrigin="anonymous" className="w-full max-w-full rounded border-none" title={`PDF Preview: ${displayFileName}`}/>

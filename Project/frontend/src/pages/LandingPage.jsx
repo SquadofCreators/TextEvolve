@@ -161,9 +161,14 @@ function LandingPage() {
       fetchFullBatchAndShowPreview();
     }, []); 
 
+    const handleExtractData = (batch) => { 
+        navigate(`/extract-text/${batch.id}`); 
+    };
 
-    // Other handlers remain the same
-    const handleExtractData = (batch) => { navigate(`/extract-text/${batch.id}`); };
+    const handleViewResults = (batch) => {
+        navigate(`/extraction-results/${batch.id}`);
+    };
+
     const closeModal = () => setPreviewModalIndex(null);
     const prevDoc = () => setPreviewModalIndex((i) => (i !== null && i > 0 ? i - 1 : i));
     const nextDoc = () => setPreviewModalIndex((i) => (i !== null && i < previewModalDocs.length - 1 ? i + 1 : i));
@@ -197,10 +202,10 @@ function LandingPage() {
                          {batches.map((batch) => (
                             <DocCard
                                 key={batch.id}
-                                data={batch} // Pass the batch object directly
+                                data={batch} 
                                 onPreview={() => handlePreview(batch)}
                                 onExtractData={() => handleExtractData(batch)}
-                                // Pass the locally defined formatters
+                                onViewResults={() => handleViewResults(batch)}
                                 formatDate={formatDate}
                                 formatBytes={formatBytes}
                             />

@@ -5,6 +5,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { batchService } from '../services/batchService'; 
 import PageHeader from '../components/utility/PageHeader'; 
 import MetaText from '../components/utility/MetaText'; 
+import { RiCharacterRecognitionLine } from "react-icons/ri"; 
 
 // Icons
 import { FiLoader, FiAlertTriangle, FiDownload, FiFileText, FiCheckCircle, FiPercent, FiTarget, FiEye, FiInfo } from 'react-icons/fi';
@@ -306,12 +307,12 @@ const ExtractionResultsPage = () => {
 
                 {/* Word Count (NEW) */}
                 {(batch.totalWordCount !== null && batch.totalWordCount !== undefined) ? (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-700"> <LuType className="mx-auto h-6 w-6 text-blue-500 mb-1"/> <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Total Words</p> <p className="text-xl font-bold text-blue-600 dark:text-blue-200">{batch.totalWordCount.toLocaleString()}</p> </div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-700"> <FiFileText className="mx-auto h-6 w-6 text-blue-500 mb-1"/> <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Total Words</p> <p className="text-xl font-bold text-blue-600 dark:text-blue-200">{batch.totalWordCount.toLocaleString()}</p> </div>
                 ) : <div className="p-3 ... italic">Word Count N/A</div>}
 
                 {/* Character Count (NEW) */}
                 {(batch.totalCharacterCount !== null && batch.totalCharacterCount !== undefined) ? (
-                      <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-md border border-purple-200 dark:border-purple-700"> <LuFileClock className="mx-auto h-6 w-6 text-purple-500 mb-1"/> <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Total Characters</p> <p className="text-xl font-bold text-purple-600 dark:text-purple-200">{batch.totalCharacterCount.toLocaleString()}</p> </div>
+                      <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-md border border-purple-200 dark:border-purple-700"> <RiCharacterRecognitionLine className="mx-auto h-6 w-6 text-purple-500 mb-1"/> <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Total Characters</p> <p className="text-xl font-bold text-purple-600 dark:text-purple-200">{batch.totalCharacterCount.toLocaleString()}</p> </div>
                 ) : <div className="p-3 ... italic">Character Count N/A</div>}
             </div>
           </div>

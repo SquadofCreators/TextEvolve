@@ -19,6 +19,7 @@ const __dirname = path.dirname(__filename);
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import batchRoutes from './routes/batchRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorMiddleware.js';
@@ -92,9 +93,9 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
-
 app.use('/api/users', userRoutes);
 app.use('/api/batches', batchRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // --- Error Handling ---
 // Not found handler

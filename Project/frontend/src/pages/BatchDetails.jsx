@@ -238,8 +238,18 @@ const BatchDetails = () => {
           <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100">
             Documents ({batch.documents?.length ?? 0})
           </h2>
-          {/* Conditionally render Extract All button if there are documents */}
-          {(batch.documents?.length ?? 0) > 0 && (
+          {/* Conditional button based on batch status and document count (Extract Text from All | Extract Again) */}
+          {
+            batch.status === 'COMPLETED' && batch.documents?.length > 0 ? (
+                <button
+                type="button"
+                onClick={handleExtractAll}
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-orange-500 hover:bg-orange-600 transition-all rounded-md cursor-pointer text-sm"
+              >
+                Extract Again
+                <IoArrowForward className="text-base" />
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={handleExtractAll}
@@ -248,7 +258,8 @@ const BatchDetails = () => {
                 Extract Text from All
                 <IoArrowForward className="text-base" />
               </button>
-          )}
+            )
+          }
         </div>
 
         {batch.documents && batch.documents.length > 0 ? (
