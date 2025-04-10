@@ -93,6 +93,7 @@ export const getAnalyticsSummary = async (req, res, next) => {
             totalBatches: batchStats._count.id || 0,
             totalDocuments: Number(batchStats._sum.totalFileCount || 0), // Convert BigInt sum if needed, ensure number
             averageAccuracy: (accuracyStats._count.accuracy > 0) ? accuracyStats._avg.accuracy : null, // Avoid returning avg if count is 0
+            averageDocsPerDay: (batchStats._count.id > 0) ? Math.round(batchStats._sum.totalFileCount / batchStats._count.id) : null,
             // Add more stats as needed (e.g., avg processing time - harder)
             // Trends (add more as needed)
             docsConvertedTrend: batchTrend, // Example trend based on batch count
