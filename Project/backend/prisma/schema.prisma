@@ -55,8 +55,8 @@ model Batch {
   accuracy           Float?
   precision          Float?
   loss               Float?
-  wordCount          Int?
-  characterCount     Int?
+  totalWordCount     Int?
+  totalCharacterCount Int?
 
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -79,7 +79,8 @@ model Document {
   loss               Float?    
 
   wordCount          Int?      
-  characterCount     Int?      
+  characterCount     Int?    
+
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   batchId            String    @db.ObjectId
