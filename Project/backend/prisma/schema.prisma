@@ -16,8 +16,8 @@ enum Status {
   PROCESSING
   COMPLETED
   FAILED
-  UPLOADED // Specific for documents initially
-  NEW      // Specific for batches initially
+  UPLOADED 
+  NEW      
 }
 
 model User {
@@ -25,13 +25,11 @@ model User {
   email           String    @unique
   password        String?
   name            String?
-  profilePictureUrl String?   // Relative path
-  // --- ADD THESE FIELDS ---
-  bio             String?   // Optional String for Biography
-  position        String?   // Optional String for Job Position
-  company         String?   // Optional String for Company Name
-  location        String?   // Optional String for Location
-  // ------------------------
+  profilePictureUrl String?   
+  bio             String?   
+  position        String?   
+  company         String?   
+  location        String?   
   otp             String?
   otpExpires      DateTime?
   isVerified      Boolean   @default(false)
@@ -57,10 +55,9 @@ model Batch {
   accuracy           Float?
   precision          Float?
   loss               Float?
-  // --- Ensure these lines are present ---
   totalWordCount       Int?
   totalCharacterCount  Int?
-  // -----------------------------------
+
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   userId             String    @db.ObjectId
@@ -76,14 +73,13 @@ model Document {
   mimeType           String?
   storageKey         String
   status             Status    @default(UPLOADED)
-  extractedContent   String?   // Extracted text for this specific document
-  accuracy           Float?    // Accuracy for this document
-  precision          Float?    // Precision for this document
-  loss               Float?    // Loss for this document
-  // --- NEW FIELDS for Document ---
-  wordCount          Int?      // Optional: Word count for this document
-  characterCount     Int?      // Optional: Character count for this document
-  // -------------------------------
+  extractedContent   String?   
+  accuracy           Float?    
+  precision          Float?    
+  loss               Float?    
+
+  wordCount          Int?      
+  characterCount     Int?      
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   batchId            String    @db.ObjectId
