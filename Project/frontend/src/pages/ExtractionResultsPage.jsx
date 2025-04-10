@@ -5,7 +5,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { batchService } from '../services/batchService'; 
 import PageHeader from '../components/utility/PageHeader'; 
 import MetaText from '../components/utility/MetaText'; 
-import PreviewModal from '../components/batches/PreviewModal';
+import PreviewModal from '../components/utility/PreviewModal';
 
 // Icons
 import { FiLoader, FiAlertTriangle, FiDownload, FiFileText, FiCheckCircle, FiPercent, FiTarget, FiEye, FiInfo } from 'react-icons/fi';
