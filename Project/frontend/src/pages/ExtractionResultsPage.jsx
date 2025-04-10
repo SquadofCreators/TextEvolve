@@ -5,7 +5,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { batchService } from '../services/batchService'; 
 import PageHeader from '../components/utility/PageHeader'; 
 import MetaText from '../components/utility/MetaText'; 
-import PreviewModal from '../components/utility/PreviewModal';
 
 // Icons
 import { FiLoader, FiAlertTriangle, FiDownload, FiFileText, FiCheckCircle, FiPercent, FiTarget, FiEye, FiInfo } from 'react-icons/fi';
@@ -85,36 +84,6 @@ const ExtractionResultsPage = () => {
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // Preview Modal State
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [currentPreviewFileIndex, setCurrentPreviewFileIndex] = useState(0);
-
-  // Preview Modal Preview Handler
-  const handleOpenPreview = (index) => {
-    if (batch && batch.documents && index >= 0 && index < batch.documents.length) {
-        setCurrentPreviewFileIndex(index);
-        setIsPreviewModalOpen(true);
-    } else {
-        console.warn("Attempted to open preview for invalid index:", index);
-    }
-  };
-
-  const handleClosePreview = () => {
-    setIsPreviewModalOpen(false);
-  };
-  
-  const handlePreviewNext = () => {
-    if (batch && batch.documents) {
-        setCurrentPreviewFileIndex((prevIndex) =>
-            Math.min(prevIndex + 1, batch.documents.length - 1)
-        );
-    }
-  };
-
-  const handlePreviewPrev = () => {
-      setCurrentPreviewFileIndex((prevIndex) => Math.max(prevIndex - 1, 0));
-  };
 
   // --- Data Fetching ---
   const fetchBatchResults = useCallback(async () => {
@@ -295,22 +264,6 @@ const ExtractionResultsPage = () => {
        );
    }
 
-   const documentsForDisplay = (batch?.documents || []).map(doc => {
-    // Construct full URLs using the API service paths
-    const apiBaseUrl = BACKEND_HOST_URL + (import.meta.env.VITE_API_URL || '/api').replace(BACKEND_HOST_URL, ''); // Get base API path like /api
-    const previewApiUrl = `${apiBaseUrl}${batchService.getPreviewApiUrl(batch.id, doc.id)}`;
-    const downloadApiUrl = `${apiBaseUrl}/batches/${batch.id}/documents/${doc.id}/download`; 
-
-    return {
-        ...doc, 
-        batchId: batch.id,
-        batchName: batch.name, 
-        // URLs for the modal
-        preview_url: previewApiUrl,
-        download_url: downloadApiUrl, 
-    };
-  });
-
    // --- Main Results Display ---
   return (
     <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
@@ -389,76 +342,68 @@ const ExtractionResultsPage = () => {
       {/* Individual Document Results Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 p-4 border-b border-gray-200 dark:border-gray-700">
-            Individual Document Results ({documentsForDisplay.length ?? 0})
+            Individual Document Results ({batch.documents?.length ?? 0})
         </h3>
-        {documentsForDisplay && documentsForDisplay.length > 0 ? (
-            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                {/* Use documentsForDisplay which includes the URLs */}
-                {documentsForDisplay.map((doc, index) => { // <-- Get index here
-                    const docAccuracy = formatMetric(doc.accuracy);
-                    const docPrecision = formatMetric(doc.precision);
-                    const docWordCount = doc.wordCount ? doc.wordCount.toLocaleString() : 'N/A';
-                    const docCharacterCount = doc.characterCount ? doc.characterCount.toLocaleString() : 'N/A';
-                    const docStatusColor = doc.status === 'COMPLETED' ? 'text-green-500' : doc.status === 'FAILED' ? 'text-red-500' : 'text-yellow-500';
-                    // We use doc.preview_url now which is derived from batchService
+        {batch.documents && batch.documents.length > 0 ? (
+          <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+            {batch.documents.map((doc) => {
+              const docAccuracy = formatMetric(doc.accuracy);
+              const docPrecision = formatMetric(doc.precision);
+              const docWordCount = doc.wordCount ? doc.wordCount.toLocaleString() : 'N/A';
+              const docCharacterCount = doc.characterCount ? doc.characterCount.toLocaleString() : 'N/A';
+              const docStatusColor = doc.status === 'COMPLETED' ? 'text-green-500' : doc.status === 'FAILED' ? 'text-red-500' : 'text-yellow-500';
+              const originalFileUrl = getFileUrl(doc.storageKey);
 
-                    return (
-                        <li key={doc.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                                {/* Left side: Filename and basic info (keep existing) */}
-                                <div className="flex-1 min-w-0">
-                                    {/* ... doc.fileName, status, counts, metrics ... */}
-                                </div>
-                                {/* Right side: Actions --- MODIFIED --- */}
-                                <div className="flex-shrink-0 flex items-center gap-2 mt-2 sm:mt-0">
-                                    {/* --- MODIFIED: Use button to open modal --- */}
-                                    {doc.preview_url && (
-                                        <button
-                                            onClick={() => handleOpenPreview(index)} // <-- Call handler with index
-                                            title="View Original File"
-                                            className="p-1.5 text-orange-600 hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900/50 rounded-md transition-colors"
-                                        >
-                                            <FiEye size={16} />
-                                        </button>
-                                    )}
-                                    {/* Keep download extracted text button */}
-                                    <button
-                                        onClick={() => handleDownloadText(doc.extractedContent, `${doc.fileName || doc.id}_extracted.txt`)}
-                                        disabled={!doc.extractedContent || doc.status !== 'COMPLETED'}
-                                        className="p-1.5 text-orange-600 hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900/50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title={!doc.extractedContent ? "No extracted text" : "Download Extracted Text"}
-                                    >
-                                        <FiFileText size={16} />
-                                    </button>
-                                </div>
+              return (
+                <li key={doc.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                        {/* Left side: Filename and basic info */}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={doc.fileName}>
+                                {doc.fileName || `Document ${doc.id.substring(0,6)}...`}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>Status: <strong className={docStatusColor}>{doc.status}</strong></span>
+                                {docWordCount && <span>Words: <strong className="text-gray-700 dark:text-gray-300">{docWordCount}</strong></span>}
+                                {docCharacterCount && <span>Chars: <strong className="text-gray-700 dark:text-gray-300">{docCharacterCount}</strong></span>}
+                                {docAccuracy && <span>Acc: <strong className="text-gray-700 dark:text-gray-300">{docAccuracy}</strong></span>}
+                                {docPrecision && <span>Prec: <strong className="text-gray-700 dark:text-gray-300">{docPrecision}</strong></span>}
                             </div>
-                            {/* Optional snippet (keep existing commented out) */}
-                        </li>
-                    );
-                })}
-            </ul>
+                        </div>
+                         {/* Right side: Actions */}
+                         <div className="flex-shrink-0 flex items-center gap-2 mt-2 sm:mt-0">
+                             {originalFileUrl && (
+                                <a href={originalFileUrl} target="_blank" rel="noopener noreferrer" title="View Original File" className="p-1.5 text-orange-600 hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900/50 rounded-md transition-colors">
+                                    <FiEye size={16}/>
+                                </a>
+                             )}
+                             <button
+                                onClick={() => handleDownloadText(doc.extractedContent, `${doc.fileName || doc.id}_extracted.txt`)}
+                                disabled={!doc.extractedContent || doc.status !== 'COMPLETED'}
+                                className="p-1.5 text-orange-600 hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900/50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!doc.extractedContent ? "No extracted text" : "Download Extracted Text"}
+                            >
+                                <FiFileText size={16}/>
+                            </button>
+                         </div>
+                    </div>
+                     {/* Optionally show individual extracted text snippet here if needed */}
+                     {/* {doc.extractedContent && (
+                        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded max-h-20 overflow-hidden relative group">
+                            <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words font-mono">{doc.extractedContent}</pre>
+                            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-50 dark:from-gray-700 to-transparent group-hover:hidden"></div>
+                        </div>
+                     )} */} 
+                </li>
+              );
+            })}
+          </ul>
         ) : (
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400 p-6 italic">
-                No individual document details available for this batch.
-            </p>
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 p-6 italic">
+            No individual document details available for this batch.
+          </p>
         )}
       </div>
-
-      {/* Preview Modal */}
-      {isPreviewModalOpen && documentsForDisplay.length > 0 && (
-        <PreviewModal
-            isOpen={isPreviewModalOpen}
-            onClose={handleClosePreview}
-            // Pass the currently selected document object from the prepared list
-            file={documentsForDisplay[currentPreviewFileIndex]}
-            currentPage={currentPreviewFileIndex}
-            totalPages={documentsForDisplay.length}
-            onPrev={handlePreviewPrev}
-            onNext={handlePreviewNext}
-            filesList={documentsForDisplay} // Pass the full list for "Download All"
-            showDownloadAll={true} // Or false if you don't want the button
-        />
-    )}
     </div>
   );
 };
