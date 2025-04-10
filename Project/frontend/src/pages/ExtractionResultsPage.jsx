@@ -303,23 +303,15 @@ const ExtractionResultsPage = () => {
                     </div>
                 ) : <div className="p-3 text-xs text-gray-400 italic flex items-center justify-center">Accuracy N/A</div>}
 
-                {/* Word Count (NEW) - Assumes batch.totalWordCount exists */}
-                {(batch.precision !== null && batch.precision !== undefined) ? (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-700">
-                        <LuType className="mx-auto h-6 w-6 text-blue-500 mb-1"/>
-                        <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Total Words</p>
-                        <p className="text-xl font-bold text-blue-600 dark:text-blue-200">{batch.precision.toLocaleString()}</p>
-                    </div>
-                ) : <div className="p-3 text-xs text-gray-400 italic flex items-center justify-center">Word Count N/A</div>}
+                {/* Word Count (NEW) */}
+                {(batch.totalWordCount !== null && batch.totalWordCount !== undefined) ? (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-700"> <LuType className="mx-auto h-6 w-6 text-blue-500 mb-1"/> <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Total Words</p> <p className="text-xl font-bold text-blue-600 dark:text-blue-200">{batch.totalWordCount.toLocaleString()}</p> </div>
+                ) : <div className="p-3 ... italic">Word Count N/A</div>}
 
-                {/* Character Count (NEW) - Assumes batch.totalCharacterCount exists */}
-                {(batch.loss !== null && batch.loss !== undefined) ? (
-                      <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-md border border-purple-200 dark:border-purple-700">
-                        <LuFileClock className="mx-auto h-6 w-6 text-purple-500 mb-1"/> {/* Changed icon */}
-                        <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Total Characters</p>
-                        <p className="text-xl font-bold text-purple-600 dark:text-purple-200">{batch.loss.toLocaleString()}</p>
-                    </div>
-                ) : <div className="p-3 text-xs text-gray-400 italic flex items-center justify-center">Character Count N/A</div>}
+                {/* Character Count (NEW) */}
+                {(batch.totalCharacterCount !== null && batch.totalCharacterCount !== undefined) ? (
+                      <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-md border border-purple-200 dark:border-purple-700"> <LuFileClock className="mx-auto h-6 w-6 text-purple-500 mb-1"/> <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Total Characters</p> <p className="text-xl font-bold text-purple-600 dark:text-purple-200">{batch.totalCharacterCount.toLocaleString()}</p> </div>
+                ) : <div className="p-3 ... italic">Character Count N/A</div>}
             </div>
           </div>
         )}
@@ -356,6 +348,8 @@ const ExtractionResultsPage = () => {
             {batch.documents.map((doc) => {
               const docAccuracy = formatMetric(doc.accuracy);
               const docPrecision = formatMetric(doc.precision);
+              const docWordCount = doc.wordCount ? doc.wordCount.toLocaleString() : 'N/A';
+              const docCharacterCount = doc.characterCount ? doc.characterCount.toLocaleString() : 'N/A';
               const docStatusColor = doc.status === 'COMPLETED' ? 'text-green-500' : doc.status === 'FAILED' ? 'text-red-500' : 'text-yellow-500';
               const originalFileUrl = getFileUrl(doc.storageKey);
 
@@ -368,9 +362,11 @@ const ExtractionResultsPage = () => {
                                 {doc.fileName || `Document ${doc.id.substring(0,6)}...`}
                             </p>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                               <span>Status: <strong className={docStatusColor}>{doc.status}</strong></span>
-                               {docAccuracy && <span>Acc: <strong className="text-gray-700 dark:text-gray-300">{docAccuracy}</strong></span>}
-                               {docPrecision && <span>Prec: <strong className="text-gray-700 dark:text-gray-300">{docPrecision}</strong></span>}
+                                <span>Status: <strong className={docStatusColor}>{doc.status}</strong></span>
+                                {docWordCount && <span>Words: <strong className="text-gray-700 dark:text-gray-300">{docWordCount}</strong></span>}
+                                {docCharacterCount && <span>Chars: <strong className="text-gray-700 dark:text-gray-300">{docCharacterCount}</strong></span>}
+                                {docAccuracy && <span>Acc: <strong className="text-gray-700 dark:text-gray-300">{docAccuracy}</strong></span>}
+                                {docPrecision && <span>Prec: <strong className="text-gray-700 dark:text-gray-300">{docPrecision}</strong></span>}
                             </div>
                         </div>
                          {/* Right side: Actions */}
