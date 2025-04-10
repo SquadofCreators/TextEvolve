@@ -163,6 +163,82 @@ export const getAnalyticsTrends = async (req, res, next) => {
     }
 };
 
+// @desc    Get data for accuracy trends chart
+// @route   GET /api/analytics/accuracy-trends?period=week|month|year
+// @access  Private
+export const getAccuracyTrends = async (req, res, next) => {
+    const userId = req.user.id;
+    const period = req.query.period || 'month'; // Default to month
+
+    try {
+        const startDate = getStartDateForPeriod(period);
+
+        // --- Query Logic ---
+        // Fetch COMPLETED batches within the period that have an accuracy score
+        const completedBatches = await prisma.batch.findMany({
+            where: {
+                userId: userId,
+                status: Status.COMPLETED,
+                accuracy: { not: null }, // Ensure accuracy exists
+                updatedAt: { gte: startDate }, // Use updatedAt as completion time? Or createdAt? Choose one.
+                                               // Using updatedAt might be better if status changes later.
+            },
+            select: {
+                updatedAt: true, // Or createdAt
+                accuracy: true,
+            },
+             orderBy: {
+                 updatedAt: 'asc' // Order by date for easier grouping later
+            }
+        });
+
+        // --- Group by Date and Calculate Average Accuracy (in Node.js) ---
+        // For large datasets, $group aggregation in MongoDB would be more efficient
+        const trendsMap = new Map();
+        const countsMap = new Map(); // To track count for averaging
+        const dateFormatOptions = (period === 'year')
+             ? { year: 'numeric', month: 'short' } // Group by month for yearly view
+             : { year: 'numeric', month: '2-digit', day: '2-digit' }; // Group by day for week/month view
+        const locale = 'sv-SE'; // Use locale that gives YYYY-MM-DD or similar for sorting
+
+        completedBatches.forEach(batch => {
+            if (batch.accuracy === null) return; // Skip if accuracy is null somehow
+
+            try {
+                // Group key (YYYY-MM-DD or YYYY-MM for year view)
+                const dateKey = batch.updatedAt.toLocaleDateString(locale, dateFormatOptions);
+
+                trendsMap.set(dateKey, (trendsMap.get(dateKey) || 0) + batch.accuracy);
+                countsMap.set(dateKey, (countsMap.get(dateKey) || 0) + 1);
+            } catch (e) {
+                 console.warn("Skipping batch due to invalid date for accuracy trends:", batch.updatedAt)
+            }
+        });
+
+        // Calculate average and format output
+        const accuracyTrendsData = Array.from(trendsMap.entries())
+            .map(([date, totalAccuracy]) => {
+                const count = countsMap.get(date);
+                const avgAccuracy = count > 0 ? totalAccuracy / count : 0;
+                return {
+                    date: date, // Keep date string as key initially for sorting
+                    avgAccuracy: avgAccuracy
+                 };
+            })
+            // Ensure proper date sorting before returning
+            .sort((a, b) => a.date.localeCompare(b.date))
+             // Optionally reformat date string here if needed by chart after sorting
+            // .map(item => ({ ...item, date: new Date(item.date).toISOString().split('T')[0] }));
+
+
+        res.status(200).json(accuracyTrendsData);
+
+    } catch (error) {
+        console.error(`Error fetching accuracy trends (${period}):`, error);
+        next(error);
+    }
+};
+
 // @desc    Get distribution of document types for the user
 // @route   GET /api/analytics/doc-types
 // @access  Private

@@ -2,6 +2,7 @@ import express from 'express';
 import {
     getAnalyticsSummary,
     getAnalyticsTrends,
+    getAccuracyTrends,
     getAnalyticsDocTypes,
     getDocumentsLog
 } from '../controllers/analyticsController.js';
@@ -14,6 +15,7 @@ router.use(protect);
 
 router.get('/summary', getAnalyticsSummary);
 router.get('/trends', getAnalyticsTrends); // Accepts ?period=week|month|year
+router.get('/accuracy-trends', getAccuracyTrends); // Accepts ?period=week|month|year
 router.get('/doc-types', getAnalyticsDocTypes);
 router.get('/documents-log', getDocumentsLog); // Accepts ?page=1&limit=10 etc.
 
