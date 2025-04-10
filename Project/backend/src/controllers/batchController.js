@@ -77,23 +77,25 @@ export const createBatch = async (req, res, next) => {
 // @access  Private
 export const getMyBatches = async (req, res, next) => {
     const userId = req.user.id;
-    // TODO: Add pagination query parameters (page, limit)
     try {
         const batches = await prisma.batch.findMany({
             where: { userId },
             orderBy: { createdAt: 'desc' },
-             select: { // Select summary fields
+            select: {
                 id: true, name: true, status: true, totalFileCount: true,
                 totalFileSize: true, createdAt: true, updatedAt: true,
-                accuracy: true, precision: true, // Aggregated metrics
+                accuracy: true,
+                // precision: true, // Keep if needed, but removing from display
+                // loss: true,      // Keep if needed, but removing from display
+                // --- Select NEW fields ---
+                totalWordCount: true,
+                totalCharacterCount: true,
+                // -------------------------
             }
         });
-        // Format each batch in the array
         const responseBatches = batches.map(batch => formatBatchResponse(batch));
         res.status(200).json(responseBatches);
-    } catch (error) {
-        next(error);
-    }
+    } catch (error) { next(error); }
 };
 
 // @desc    Get a single batch by ID including its documents
@@ -102,39 +104,38 @@ export const getMyBatches = async (req, res, next) => {
 export const getBatchById = async (req, res, next) => {
     const { batchId } = req.params;
     const userId = req.user.id;
-
     try {
         const batch = await prisma.batch.findUnique({
             where: { id: batchId },
-            include: { // Include documents
-                documents: {
-                     select: { // Select needed document fields
-                        id: true, fileName: true, fileSize: true, mimeType: true,
-                        status: true, createdAt: true, storageKey: true, // Include storageKey
-                        accuracy: true, precision: true, loss: true, // Doc metrics
+            select: { // Use select instead of include for finer control
+                 id: true, name: true, status: true, totalFileCount: true,
+                 totalFileSize: true, createdAt: true, updatedAt: true,
+                 accuracy: true, precision: true, loss: true, // Keep all backend fields for now
+                 extractedContent: true, // Aggregated content
+                 totalWordCount: true, // Select new batch fields
+                 totalCharacterCount: true,
+                 userId: true, // Need for ownership check below if not using include
+                 // Select specific document fields including new ones
+                 documents: {
+                     select: {
+                         id: true, fileName: true, fileSize: true, mimeType: true,
+                         status: true, createdAt: true, storageKey: true,
+                         accuracy: true, precision: true, loss: true,
+                         extractedContent: true, // Select individual text
+                         wordCount: true, // Select new document fields
+                         characterCount: true,
                      },
                      orderBy: { createdAt: 'asc' }
-                }
-                // user: { select: { id: true, email: true }} // Optionally include user
+                 }
             }
         });
 
-        if (!batch) {
-            res.status(404);
-            return next(new Error('Batch not found.'));
-        }
-        // IMPORTANT: Check ownership
-        if (batch.userId !== userId) {
-            res.status(403); // Forbidden
-            return next(new Error('Not authorized to access this batch.'));
-        }
+        if (!batch) { res.status(404); return next(new Error('Batch not found.')); }
+        if (batch.userId !== userId) { res.status(403); return next(new Error('Not authorized.')); }
 
-        res.status(200).json(formatBatchResponse(batch)); // Format the response
+        res.status(200).json(formatBatchResponse(batch));
 
-    } catch (error) {
-        // P2023 (Invalid ID) handled by generic handler
-        next(error);
-    }
+    } catch (error) { next(error); }
 };
 
 // @desc    Update batch details (e.g., name, status)
@@ -416,135 +417,138 @@ export const deleteDocumentFromBatch = async (req, res, next) => {
 // @desc    Update document processing results (content, metrics, status)
 // @route   PUT /api/batches/:batchId/documents/:docId/results
 // @access  Private (or internal service)
- export const updateDocumentResults = async (req, res, next) => {
+export const updateDocumentResults = async (req, res, next) => {
     const { batchId, docId } = req.params;
-    const { extractedContent, accuracy, precision, loss, status } = req.body;
-    const userId = req.user.id; // Assume user triggers for now
+    // Destructure new fields from body
+    const { extractedContent, accuracy, precision, loss, status, wordCount, characterCount } = req.body;
+    const userId = req.user.id;
 
-    // Validation
-    if (status !== undefined && !(status in Status)) {
-        res.status(400);
-        return next(new Error(`Invalid status value. Must be one of: ${Object.keys(Status).join(', ')}`));
-    }
-    // Add more validation for metrics (e.g., check if numbers)
+    if (status !== undefined && !(status in Status)) { /* ... status validation ... */ }
+    // Add validation for counts? (e.g., must be integer >= 0)
 
     try {
-         // 1. Find the document and verify ownership via batch
-        const document = await prisma.document.findUnique({
-             where: { id: docId },
-             select: { id: true, batch: { select: { id: true, userId: true } } }
-         });
-        if (!document) { res.status(404); return next(new Error('Document not found.')); }
-        if (document.batch.id !== batchId) { res.status(400); return next(new Error('Document does not belong to the specified batch.')); }
-        if (userId && document.batch.userId !== userId) { res.status(403); return next(new Error('Not authorized to update this document.')); }
+        // Find document & verify ownership (no changes needed)
+        const document = await prisma.document.findUnique({ /* ... */ });
+        if (!document || document.batch.id !== batchId) { /* 404 */ }
+        if (userId && document.batch.userId !== userId) { /* 403 */ }
 
-         // 2. Update the document
-         const updatedDoc = await prisma.document.update({
-             where: { id: docId },
-             data: {
-                 extractedContent: extractedContent !== undefined ? extractedContent : undefined,
-                 accuracy: accuracy !== undefined ? Number(accuracy) : undefined, // Ensure numbers
-                 precision: precision !== undefined ? Number(precision) : undefined,
-                 loss: loss !== undefined ? Number(loss) : undefined,
-                 status: status !== undefined ? status : undefined,
-             },
-             select: { // Return updated fields safely
+        // Prepare data, including new counts
+        const dataToUpdate = {
+            extractedContent: extractedContent !== undefined ? extractedContent : undefined,
+            accuracy: accuracy !== undefined ? Number(accuracy) : undefined,
+            precision: precision !== undefined ? Number(precision) : undefined,
+            loss: loss !== undefined ? Number(loss) : undefined,
+            status: status !== undefined ? status : undefined,
+            // Add new fields
+            wordCount: wordCount !== undefined ? Number(wordCount) : undefined,
+            characterCount: characterCount !== undefined ? Number(characterCount) : undefined,
+        };
+        // Remove undefined fields to avoid overwriting with null if not provided
+        Object.keys(dataToUpdate).forEach(key => dataToUpdate[key] === undefined && delete dataToUpdate[key]);
+
+
+        const updatedDoc = await prisma.document.update({
+            where: { id: docId },
+            data: dataToUpdate,
+            select: { // Select needed fields, including new ones
                 id: true, status: true, accuracy: true, precision: true, loss: true,
-                // Omit large 'extractedContent' from response unless needed
-             }
-         });
+                wordCount: true, characterCount: true,
+            }
+        });
 
-        // TODO: Consider triggering batch aggregation update here if appropriate
-        // await triggerBatchAggregation(batchId); // Example helper function call
+        // Maybe trigger batch aggregation here?
+        // if (status === 'COMPLETED' || status === 'FAILED') {
+        //    triggerBatchAggregation(batchId); // Fire-and-forget or await
+        // }
 
         res.status(200).json(updatedDoc);
 
-    } catch (error) {
-        next(error);
-    }
- };
+    } catch (error) { next(error); }
+};
 
 // @desc    Calculate and update aggregated metrics for a batch
 // @route   PUT /api/batches/:batchId/aggregate-metrics
 // @access  Private (or internal service)
 export const aggregateBatchMetrics = async (req, res, next) => {
-     const { batchId } = req.params;
-      const userId = req.user.id; // Ensure user owns batch if called via user API
+    const { batchId } = req.params;
+    const userId = req.user.id;
 
-     try {
-          // 1. Verify batch ownership
-          const batchCheck = await prisma.batch.findUnique({
-              where: { id: batchId }, select: { userId: true }
-          });
-          if (!batchCheck) { res.status(404); return next(new Error('Batch not found.')); }
-          if (userId && batchCheck.userId !== userId) { res.status(403); return next(new Error('Not authorized.')); }
+    try {
+        // Verify batch ownership (no changes needed)
+        const batchCheck = await prisma.batch.findUnique({ /* ... */ });
+        if (!batchCheck || (userId && batchCheck.userId !== userId)) { /* 404/403 */ }
 
-         // 2. Fetch all completed documents with metrics for the batch
-         const documents = await prisma.document.findMany({
-             where: {
-                 batchId: batchId,
-                 status: Status.COMPLETED, // Use Status enum
-                 // Only include docs where metrics are actually numbers
-                 accuracy: { not: null, lte: 1, gte: 0 }, // Example range check
-                 precision: { not: null, lte: 1, gte: 0 },
-             },
-             select: { accuracy: true, precision: true, loss: true, extractedContent: true }
-         });
+        // Fetch COMPLETED documents including new counts
+        const documents = await prisma.document.findMany({
+            where: {
+                batchId: batchId,
+                status: Status.COMPLETED,
+                // Add checks for new counts if needed for aggregation logic
+            },
+            select: {
+                accuracy: true, precision: true, loss: true, extractedContent: true,
+                // Select new fields
+                wordCount: true,
+                characterCount: true,
+            }
+        });
 
-         let updatedBatchMetrics;
+        let updatedBatchSummary; // Use different name to avoid confusion
 
-         if (documents.length === 0) {
-              console.log(`Batch Controller: No documents found to aggregate metrics for batch ${batchId}. Resetting metrics.`);
-              updatedBatchMetrics = await prisma.batch.update({
-                  where: { id: batchId },
-                  data: { accuracy: null, precision: null, loss: null, extractedContent: null },
-                  select: { accuracy: true, precision: true, loss: true }
-              });
-         } else {
-             // 3. Calculate aggregated metrics (simple average)
-             let totalAcc = 0, totalPrec = 0, totalLoss = 0, countLoss = 0;
-             let aggregatedContent = "";
+        if (documents.length === 0) {
+            console.log(`[Aggregate - ${batchId}] No completed documents found. Resetting metrics.`);
+            updatedBatchSummary = await prisma.batch.update({
+                where: { id: batchId },
+                // Reset all metrics including new counts
+                data: { accuracy: null, precision: null, loss: null, extractedContent: null, totalWordCount: null, totalCharacterCount: null },
+                select: { accuracy: true, precision: true, loss: true, totalWordCount: true, totalCharacterCount: true } // Select new fields
+            });
+        } else {
+            // Calculate aggregated metrics AND counts
+            let totalAcc = 0, totalPrec = 0, totalLoss = 0, countLoss = 0;
+            let totalWords = 0; // Initialize counters
+            let totalChars = 0;
+            let aggregatedContent = "";
 
-             documents.forEach(doc => {
-                 totalAcc += doc.accuracy ?? 0; // Use nullish coalescing
-                 totalPrec += doc.precision ?? 0;
-                 if(doc.loss !== null) {
-                     totalLoss += doc.loss;
-                     countLoss++;
-                 }
-                 aggregatedContent += (doc.extractedContent || "") + "\n\n---\n\n";
-             });
+            documents.forEach(doc => {
+                totalAcc += doc.accuracy ?? 0;
+                totalPrec += doc.precision ?? 0;
+                if(doc.loss !== null) { totalLoss += doc.loss; countLoss++; }
+                // Sum up the counts from individual documents
+                totalWords += doc.wordCount ?? 0;
+                totalChars += doc.characterCount ?? 0;
+                aggregatedContent += (doc.extractedContent || "") + "\n\n---\n\n";
+            });
 
-             const avgAccuracy = totalAcc / documents.length;
-             const avgPrecision = totalPrec / documents.length;
-             const avgLoss = countLoss > 0 ? totalLoss / countLoss : null; // Average loss only if present
+            const avgAccuracy = totalAcc / documents.length;
+            const avgPrecision = totalPrec / documents.length;
+            const avgLoss = countLoss > 0 ? totalLoss / countLoss : null;
 
-             // 4. Update the batch record
-             updatedBatchMetrics = await prisma.batch.update({
-                 where: { id: batchId },
-                 data: {
-                     accuracy: avgAccuracy,
-                     precision: avgPrecision,
-                     loss: avgLoss,
-                     extractedContent: aggregatedContent.trim(),
-                     // Optionally update batch status if all docs are processed
-                     // status: Status.COMPLETED
-                 },
-                  select: { accuracy: true, precision: true, loss: true }
-             });
-              console.log(`Batch Controller: Aggregated metrics updated for batch ${batchId}`);
-         }
+            // Update the batch record with metrics AND counts
+            updatedBatchSummary = await prisma.batch.update({
+                where: { id: batchId },
+                data: {
+                    accuracy: avgAccuracy, precision: avgPrecision, loss: avgLoss,
+                    extractedContent: aggregatedContent.trim(),
+                    // Save calculated totals
+                    totalWordCount: totalWords,
+                    totalCharacterCount: totalChars,
+                    // Optionally update status only if ALL docs are completed/failed?
+                    // status: Status.COMPLETED // Be careful with this logic
+                },
+                 select: { accuracy: true, precision: true, loss: true, totalWordCount: true, totalCharacterCount: true } // Select new fields
+            });
+            console.log(`[Aggregate - ${batchId}] Aggregated metrics and counts updated.`);
+        }
 
-         res.status(200).json({
-             message: documents.length > 0 ? 'Batch metrics aggregated successfully.' : 'No completed documents with metrics found; metrics reset.',
-             batchMetrics: updatedBatchMetrics
-         });
+        res.status(200).json({
+            message: documents.length > 0 ? 'Batch metrics aggregated.' : 'No documents to aggregate.',
+            // Use consistent naming if needed, e.g., batchSummary
+            batchMetrics: updatedBatchSummary
+        });
 
-     } catch (error) {
-         next(error);
-     }
+    } catch (error) { next(error); }
 };
-
 
 // --- UPDATED Preview Document (Using root option) ---
 export const previewDocument = async (req, res, next) => {

@@ -1,10 +1,8 @@
 // src/services/textExtractService.js
 import axios from 'axios';
 
-// URL for the external OCR AI backend
-const OCR_API_URL = 'https://textevolve-backend-ai.onrender.com/google-ocr';
-// Or use an environment variable:
-// const OCR_API_URL = import.meta.env.VITE_OCR_API_URL || 'https://textevolve-backend-ai.onrender.com/google-ocr';
+// Evnironment variable for the OCR API URL
+const OCR_API_URL = import.meta.env.VITE_OCR_API_URL || 'https://textevolve-backend-ai.onrender.com/google-ocr';
 
 /**
  * Sends a list of image URLs to the OCR service for text extraction.

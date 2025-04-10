@@ -6,9 +6,14 @@ import PageHeader from '../components/utility/PageHeader'; // Assuming exists
 import MetaText from '../components/utility/MetaText'; // Assuming exists
 
 // Icons
-import { FiLoader, FiAlertTriangle, FiDownload, FiFileText, FiCheckCircle, FiPercent, FiTarget, FiTrendingDown, FiEye, FiInfo } from 'react-icons/fi';
-import { LuCalendarDays } from "react-icons/lu";
+import { FiLoader, FiAlertTriangle, FiDownload, FiFileText, FiCheckCircle, FiPercent, FiTarget, FiEye, FiInfo } from 'react-icons/fi';
+import { LuCalendarDays, LuType, LuFileClock } from "react-icons/lu"; // Replaced Clock/Storage icons
 import { MdFolderOpen } from "react-icons/md";
+import { FaHashtag, FaFilePdf, FaFileWord } from "react-icons/fa6";
+
+import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { saveAs } from 'file-saver'; 
 
 // --- Helper Functions (Import from utils or define here) ---
 
@@ -138,6 +143,68 @@ const ExtractionResultsPage = () => {
     }
   };
 
+    // --- Download PDF ---
+    const handleDownloadPdf = (textContent, filename) => {
+      if (textContent === null || textContent === undefined) { alert("No text content available."); return; }
+      try {
+          const pdf = new jsPDF(); // Default: Portrait, pt, A4
+          const pageHeight = pdf.internal.pageSize.height || pdf.internal.pageSize.getHeight();
+          const pageWidth = pdf.internal.pageSize.width || pdf.internal.pageSize.getWidth();
+          const margin = 20; // Define margin
+          const maxLineWidth = pageWidth - margin * 2;
+          let y = margin; // Start position
+
+          pdf.setFontSize(11); // Set font size
+
+          // Split text into lines that fit the page width
+          const lines = pdf.splitTextToSize(textContent, maxLineWidth);
+
+          lines.forEach(line => {
+              if (y + 10 > pageHeight - margin) { // Check if new line exceeds page height
+                  pdf.addPage(); // Add a new page
+                  y = margin; // Reset y position
+              }
+              pdf.text(line, margin, y);
+              y += 7; // Move cursor down (adjust line height as needed)
+          });
+
+          pdf.save(filename || `batch_results_${batchId}.pdf`);
+      } catch (pdfError) {
+          console.error("Error generating PDF:", pdfError);
+          alert("Could not generate PDF file.");
+      }
+  };
+
+  // --- Download DOCX ---
+  const handleDownloadDocx = async (textContent, filename) => {
+      if (textContent === null || textContent === undefined) { alert("No text content available."); return; }
+      try {
+          // Split content into paragraphs based on newline characters
+          const paragraphs = textContent.split('\n').map(line =>
+              new Paragraph({
+                  children: [new TextRun(line)],
+              })
+          );
+
+          const doc = new Document({
+              sections: [{
+                  properties: {}, // Default page setup
+                  children: paragraphs,
+              }],
+          });
+
+          // Use Packer to generate blob
+          const blob = await Packer.toBlob(doc);
+          // Use file-saver to trigger download
+          saveAs(blob, filename || `batch_results_${batchId}.docx`);
+
+      } catch (docxError) {
+          console.error("Error generating DOCX:", docxError);
+          alert("Could not generate DOCX file.");
+      }
+  };
+
+
   // --- Render Logic ---
 
   if (loading) {
@@ -222,64 +289,61 @@ const ExtractionResultsPage = () => {
             </div>
        )}
 
-       {/* Overall Metrics (Only show if COMPLETED and metrics exist) */}
-        {batch.status === 'COMPLETED' && (batch.accuracy !== null || batch.precision !== null || batch.loss !== null) && (
-            <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Overall Batch Metrics</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    {formatMetric(batch.accuracy) ? (
-                        <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-md border border-green-200 dark:border-green-700">
-                            <FiTarget className="mx-auto h-6 w-6 text-green-500 mb-1"/>
-                            <p className="text-xs text-green-700 dark:text-green-300 font-medium">Accuracy</p>
-                            <p className="text-xl font-bold text-green-600 dark:text-green-200">{formatMetric(batch.accuracy)}</p>
-                        </div>
-                    ) : <div className="p-3 text-xs text-gray-400 italic">Accuracy N/A</div>}
-                    {formatMetric(batch.precision) ? (
-                        <div className="p-3 bg-orange-50 dark:bg-orange-900/30 rounded-md border border-orange-200 dark:border-orange-700">
-                            <FiCheckCircle className="mx-auto h-6 w-6 text-orange-500 mb-1"/>
-                            <p className="text-xs text-orange-700 dark:text-orange-300 font-medium">Precision</p>
-                            <p className="text-xl font-bold text-orange-600 dark:text-orange-200">{formatMetric(batch.precision)}</p>
-                        </div>
-                     ) : <div className="p-3 text-xs text-gray-400 italic">Precision N/A</div>}
-                     {formatLoss(batch.loss) ? (
-                         <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-md border border-yellow-200 dark:border-yellow-700">
-                            <FiTrendingDown className="mx-auto h-6 w-6 text-yellow-500 mb-1"/>
-                            <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">Loss</p>
-                            <p className="text-xl font-bold text-yellow-600 dark:text-yellow-200">{formatLoss(batch.loss)}</p>
-                        </div>
-                     ) : <div className="p-3 text-xs text-gray-400 italic">Loss N/A</div>}
-                </div>
+        {/* Overall Metrics (Only show if COMPLETED and metrics exist) */}
+        {batch.status === 'COMPLETED' && (
+          <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Overall Batch Summary</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                {/* Accuracy */}
+                {formatMetric(batch.accuracy) !== null ? (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-md border border-green-200 dark:border-green-700">
+                        <FiTarget className="mx-auto h-6 w-6 text-green-500 mb-1"/>
+                        <p className="text-xs text-green-700 dark:text-green-300 font-medium">Accuracy</p>
+                        <p className="text-xl font-bold text-green-600 dark:text-green-200">{formatMetric(batch.accuracy)}</p>
+                    </div>
+                ) : <div className="p-3 text-xs text-gray-400 italic flex items-center justify-center">Accuracy N/A</div>}
+
+                {/* Word Count (NEW) - Assumes batch.totalWordCount exists */}
+                {(batch.precision !== null && batch.precision !== undefined) ? (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-700">
+                        <LuType className="mx-auto h-6 w-6 text-blue-500 mb-1"/>
+                        <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Total Words</p>
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-200">{batch.precision.toLocaleString()}</p>
+                    </div>
+                ) : <div className="p-3 text-xs text-gray-400 italic flex items-center justify-center">Word Count N/A</div>}
+
+                {/* Character Count (NEW) - Assumes batch.totalCharacterCount exists */}
+                {(batch.loss !== null && batch.loss !== undefined) ? (
+                      <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-md border border-purple-200 dark:border-purple-700">
+                        <LuFileClock className="mx-auto h-6 w-6 text-purple-500 mb-1"/> {/* Changed icon */}
+                        <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Total Characters</p>
+                        <p className="text-xl font-bold text-purple-600 dark:text-purple-200">{batch.loss.toLocaleString()}</p>
+                    </div>
+                ) : <div className="p-3 text-xs text-gray-400 italic flex items-center justify-center">Character Count N/A</div>}
             </div>
+          </div>
         )}
 
 
       {/* Aggregated Text Section (Only show if COMPLETED) */}
-       {batch.status === 'COMPLETED' && (
-            <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Aggregated Extracted Text</h3>
-                    <button
-                        onClick={() => handleDownloadText(batch.extractedContent, `batch_aggregated_${batchId}.txt`)}
-                        disabled={!batch.extractedContent}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white text-xs font-medium rounded-md hover:bg-orange-700 transition disabled:opacity-50"
-                        title={!batch.extractedContent ? "No aggregated text available" : "Download aggregated text"}
-                    >
-                        <FiDownload size={14}/> Download (.txt)
-                    </button>
+      {batch.status === 'COMPLETED' && (
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Aggregated Extracted Text</h3>
+                {/* --- Download Buttons --- */}
+                <div className="flex flex-wrap gap-2">
+                      <button onClick={() => handleDownloadText(batch.extractedContent, `batch_${batchId}_aggregated.txt`)} disabled={!batch.extractedContent} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md hover:bg-gray-700 transition disabled:opacity-50" title={!batch.extractedContent ? "No text available" : "Download as TXT"} > <FiFileText size={14}/> TXT </button>
+                      <button onClick={() => handleDownloadPdf(batch.extractedContent, `batch_${batchId}_aggregated.pdf`)} disabled={!batch.extractedContent} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition disabled:opacity-50" title={!batch.extractedContent ? "No text available" : "Download as PDF"} > <FaFilePdf size={14}/> PDF </button>
+                      <button onClick={() => handleDownloadDocx(batch.extractedContent, `batch_${batchId}_aggregated.docx`)} disabled={!batch.extractedContent} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50" title={!batch.extractedContent ? "No text available" : "Download as DOCX"} > <FaFileWord size={14}/> DOCX </button>
                 </div>
-                <div className="p-4 max-h-80 overflow-y-auto bg-gray-50 dark:bg-gray-900/50">
-                    {batch.extractedContent ? (
-                         <pre className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300 font-mono">
-                            {batch.extractedContent}
-                         </pre>
-                    ) : (
-                         <p className="text-sm text-gray-500 dark:text-gray-400 italic text-center py-5">
-                            No aggregated text content available for this batch.
-                         </p>
-                    )}
-                </div>
+                  {/* ----------------------- */}
             </div>
-       )}
+            <div className="p-4 max-h-80 overflow-y-auto bg-gray-50 dark:bg-gray-900/50">
+                  {batch.extractedContent ? ( <pre className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300 font-mono"> {batch.extractedContent} </pre> )
+                  : ( <p className="text-sm text-gray-500 dark:text-gray-400 italic text-center py-5"> No aggregated text content available for this batch. </p> )}
+            </div>
+        </div>
+      )}
 
 
       {/* Individual Document Results Section */}
@@ -332,7 +396,7 @@ const ExtractionResultsPage = () => {
                             <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words font-mono">{doc.extractedContent}</pre>
                             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-50 dark:from-gray-700 to-transparent group-hover:hidden"></div>
                         </div>
-                     )} */}
+                     )} */} 
                 </li>
               );
             })}
