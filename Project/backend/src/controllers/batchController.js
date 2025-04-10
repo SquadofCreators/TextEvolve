@@ -554,7 +554,7 @@ export const aggregateBatchMetrics = async (req, res, next) => {
                 totalChars += doc.characterCount ?? 0;
 
                 // Aggregate text (ensure separator is distinct)
-                aggregatedContent += (doc.extractedContent || "") + "\n\n<--DOC_SEPARATOR-->\n\n";
+                aggregatedContent += (doc.extractedContent || "") + "\n\n-----\n\n";
             });
 
             // Calculate averages safely (avoid division by zero)
