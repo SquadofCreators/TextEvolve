@@ -228,13 +228,9 @@ export const getAnalyticsDocTypes = async (req, res, next) => {
     }
 };
 
-
-// --- Optional: Detailed Log Endpoint ---
-// Add getDocumentsLog controller function here if needed,
-// handling pagination (skip, take), sorting (orderBy), etc.
-// based on query parameters (req.query.page, req.query.limit, ...)
-// Example Structure:
-/*
+// @desc    Get detailed log of documents for the user
+// @route   GET /api/analytics/documents-log?page=1&limit=10
+// @access  Private
 export const getDocumentsLog = async (req, res, next) => {
     const userId = req.user.id;
     const page = parseInt(req.query.page || '1', 10);
@@ -275,4 +271,3 @@ export const getDocumentsLog = async (req, res, next) => {
 
     } catch (error) { next(error); }
 }
-*/
