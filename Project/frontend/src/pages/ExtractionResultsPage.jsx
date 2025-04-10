@@ -1,4 +1,5 @@
 // src/pages/ExtractionResultsPage.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { batchService } from '../services/batchService'; // Use NEW service

@@ -1,4 +1,5 @@
 // src/controllers/batchController.js
+
 import prisma from '../config/db.js';
 import { deleteLocalFile } from '../middleware/uploadMiddleware.js';
 import { Prisma, Status } from '@prisma/client'; // Import Prisma namespace and Status enum
@@ -423,47 +424,88 @@ export const updateDocumentResults = async (req, res, next) => {
     const { extractedContent, accuracy, precision, loss, status, wordCount, characterCount } = req.body;
     const userId = req.user.id;
 
-    if (status !== undefined && !(status in Status)) { /* ... status validation ... */ }
-    // Add validation for counts? (e.g., must be integer >= 0)
+    if (status !== undefined && !(status in Status)) {
+        res.status(400);
+        return next(new Error(`Invalid status value. Must be one of: ${Object.keys(Status).join(', ')}`));
+    }
 
     try {
         // Find document & verify ownership (no changes needed)
-        const document = await prisma.document.findUnique({ /* ... */ });
-        if (!document || document.batch.id !== batchId) { /* 404 */ }
-        if (userId && document.batch.userId !== userId) { /* 403 */ }
+        const document = await prisma.document.findUnique({
+            where: { id: docId },
+            select: {
+                id: true,
+                batch: { select: { id: true, userId: true } } // Select batch info for checks
+            }
+        });
+        // Check if document exists
+        if (!document) {
+            res.status(404);
+            return next(new Error('Document not found.'));
+        }
 
-        // Prepare data, including new counts
-        const dataToUpdate = {
-            extractedContent: extractedContent !== undefined ? extractedContent : undefined,
-            accuracy: accuracy !== undefined ? Number(accuracy) : undefined,
-            precision: precision !== undefined ? Number(precision) : undefined,
-            loss: loss !== undefined ? Number(loss) : undefined,
-            status: status !== undefined ? status : undefined,
-            // Add new fields
-            wordCount: wordCount !== undefined ? Number(wordCount) : undefined,
-            characterCount: characterCount !== undefined ? Number(characterCount) : undefined,
-        };
-        // Remove undefined fields to avoid overwriting with null if not provided
-        Object.keys(dataToUpdate).forEach(key => dataToUpdate[key] === undefined && delete dataToUpdate[key]);
+        // Check if document belongs to the correct batch
+        if (document.batch.id !== batchId) {
+            res.status(400); // Bad Request - mismatch
+            return next(new Error('Document does not belong to the specified batch.'));
+        }
 
+        // Check ownership if userId is available (adjust if internal services call this without user context)
+        if (userId && document.batch.userId !== userId) {
+            res.status(403);
+            return next(new Error('Not authorized to update this document.'));
+        }
 
-        const updatedDoc = await prisma.document.update({
+        // --- Prepare Data for Update ---
+        const dataToUpdate = {};
+        
+        // Only add fields to the update object if they were actually provided in the request body
+        if (extractedContent !== undefined) dataToUpdate.extractedContent = extractedContent; // Keep null/string
+        if (status !== undefined) dataToUpdate.status = status;
+
+        // Use the safe parser for numeric fields
+        if (accuracy !== undefined) dataToUpdate.accuracy = parseNumberOrNull(accuracy);
+        if (precision !== undefined) dataToUpdate.precision = parseNumberOrNull(precision);
+        if (loss !== undefined) dataToUpdate.loss = parseNumberOrNull(loss);
+        if (wordCount !== undefined) dataToUpdate.wordCount = parseNumberOrNull(wordCount); // Ensure Int? handles null
+        if (characterCount !== undefined) dataToUpdate.characterCount = parseNumberOrNull(characterCount); // Ensure Int? handles null
+
+        // Check if there's anything to update
+        if (Object.keys(dataToUpdate).length === 0) {
+            return res.status(400).json({ message: "No valid fields provided for update." });
+        }
+
+        // Add updatedAt timestamp update
+        dataToUpdate.updatedAt = new Date();
+
+         // --- Perform Update ---
+         const updatedDoc = await prisma.document.update({
             where: { id: docId },
             data: dataToUpdate,
-            select: { // Select needed fields, including new ones
+            select: { // Select fields needed for the response
                 id: true, status: true, accuracy: true, precision: true, loss: true,
-                wordCount: true, characterCount: true,
+                wordCount: true, characterCount: true, updatedAt: true,
             }
         });
 
-        // Maybe trigger batch aggregation here?
-        // if (status === 'COMPLETED' || status === 'FAILED') {
-        //    triggerBatchAggregation(batchId); // Fire-and-forget or await
-        // }
+        // trigger batch aggregation here?
+        if (status === 'COMPLETED' || status === 'FAILED') {
+           triggerBatchAggregation(batchId); // Fire-and-forget or await
+        }
+        
+        console.log(`Successfully updated results for document ${docId} in batch ${batchId}`);
+        res.status(200).json(formatDocumentResponse(updatedDoc));
 
-        res.status(200).json(updatedDoc);
-
-    } catch (error) { next(error); }
+    } catch (error) { 
+        console.error(`Error updating results for document ${docId} in batch ${batchId}:`, error);
+        // Check for specific Prisma errors if needed
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            // Example: Foreign key violation, unique constraint etc.
+             console.error("Prisma Error Code:", error.code);
+        }
+        // Pass error to the central error handler
+        next(error);
+    }
 };
 
 // @desc    Calculate and update aggregated metrics for a batch
@@ -471,83 +513,102 @@ export const updateDocumentResults = async (req, res, next) => {
 // @access  Private (or internal service)
 export const aggregateBatchMetrics = async (req, res, next) => {
     const { batchId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id; // Allow for internal calls
 
     try {
-        // Verify batch ownership (no changes needed)
-        const batchCheck = await prisma.batch.findUnique({ /* ... */ });
-        if (!batchCheck || (userId && batchCheck.userId !== userId)) { /* 404/403 */ }
+        // --- Authorization Check --- (Optional but recommended)
+        const batchCheck = await prisma.batch.findUnique({
+             where: { id: batchId },
+             select: { userId: true }
+        });
+        if (!batchCheck) {
+             res.status(404); return next(new Error('Batch not found.'));
+        }
+        if (userId && batchCheck.userId !== userId) {
+             res.status(403); return next(new Error('Not authorized to aggregate metrics for this batch.'));
+        }
 
-        // Fetch COMPLETED documents including new counts
+        // --- Fetch Completed Documents ---
         const documents = await prisma.document.findMany({
             where: {
                 batchId: batchId,
-                status: Status.COMPLETED,
-                // Add checks for new counts if needed for aggregation logic
+                status: Status.COMPLETED, // Only aggregate completed ones
             },
             select: {
                 accuracy: true, precision: true, loss: true, extractedContent: true,
-                // Select new fields
-                wordCount: true,
+                wordCount: true, // Select new fields
                 characterCount: true,
             }
         });
 
-        let updatedBatchSummary; // Use different name to avoid confusion
+        let updatedBatchSummary;
 
         if (documents.length === 0) {
             console.log(`[Aggregate - ${batchId}] No completed documents found. Resetting metrics.`);
+            // Reset all metrics including new counts to null
             updatedBatchSummary = await prisma.batch.update({
                 where: { id: batchId },
-                // Reset all metrics including new counts
-                data: { accuracy: null, precision: null, loss: null, extractedContent: null, totalWordCount: null, totalCharacterCount: null },
-                select: { accuracy: true, precision: true, loss: true, totalWordCount: true, totalCharacterCount: true } // Select new fields
+                data: { accuracy: null, precision: null, loss: null, extractedContent: null, totalWordCount: null, totalCharacterCount: null, updatedAt: new Date() },
+                select: { accuracy: true, precision: true, loss: true, totalWordCount: true, totalCharacterCount: true }
             });
         } else {
-            // Calculate aggregated metrics AND counts
-            let totalAcc = 0, totalPrec = 0, totalLoss = 0, countLoss = 0;
-            let totalWords = 0; // Initialize counters
+            // --- Calculate Aggregated Metrics & Counts ---
+            let totalAcc = 0, accCount = 0;
+            let totalPrec = 0, precCount = 0;
+            let totalLoss = 0, lossCount = 0;
+            let totalWords = 0;
             let totalChars = 0;
             let aggregatedContent = "";
 
             documents.forEach(doc => {
-                totalAcc += doc.accuracy ?? 0;
-                totalPrec += doc.precision ?? 0;
-                if(doc.loss !== null) { totalLoss += doc.loss; countLoss++; }
-                // Sum up the counts from individual documents
+                // Safely add metrics, only counting non-null values for averages
+                if (doc.accuracy !== null) { totalAcc += doc.accuracy; accCount++; }
+                if (doc.precision !== null) { totalPrec += doc.precision; precCount++; }
+                if (doc.loss !== null) { totalLoss += doc.loss; lossCount++; }
+
+                // Sum counts, treating null as 0
                 totalWords += doc.wordCount ?? 0;
                 totalChars += doc.characterCount ?? 0;
-                aggregatedContent += (doc.extractedContent || "") + "\n\n---\n\n";
+
+                // Aggregate text (ensure separator is distinct)
+                aggregatedContent += (doc.extractedContent || "") + "\n\n<--DOC_SEPARATOR-->\n\n";
             });
 
-            const avgAccuracy = totalAcc / documents.length;
-            const avgPrecision = totalPrec / documents.length;
-            const avgLoss = countLoss > 0 ? totalLoss / countLoss : null;
+            // Calculate averages safely (avoid division by zero)
+            const avgAccuracy = accCount > 0 ? totalAcc / accCount : null;
+            const avgPrecision = precCount > 0 ? totalPrec / precCount : null;
+            const avgLoss = lossCount > 0 ? totalLoss / lossCount : null;
 
-            // Update the batch record with metrics AND counts
+            // --- Update Batch Record ---
             updatedBatchSummary = await prisma.batch.update({
                 where: { id: batchId },
                 data: {
-                    accuracy: avgAccuracy, precision: avgPrecision, loss: avgLoss,
+                    accuracy: avgAccuracy,
+                    precision: avgPrecision,
+                    loss: avgLoss,
                     extractedContent: aggregatedContent.trim(),
-                    // Save calculated totals
                     totalWordCount: totalWords,
                     totalCharacterCount: totalChars,
-                    // Optionally update status only if ALL docs are completed/failed?
-                    // status: Status.COMPLETED // Be careful with this logic
+                    // IMPORTANT: Decide if status should be updated here.
+                    // Only update to COMPLETED if ALL documents (not just fetched ones)
+                    // are COMPLETED or FAILED. This might require another query.
+                    // status: Status.COMPLETED, // Be cautious with this
+                    updatedAt: new Date()
                 },
-                 select: { accuracy: true, precision: true, loss: true, totalWordCount: true, totalCharacterCount: true } // Select new fields
+                select: { accuracy: true, precision: true, loss: true, totalWordCount: true, totalCharacterCount: true }
             });
             console.log(`[Aggregate - ${batchId}] Aggregated metrics and counts updated.`);
         }
 
         res.status(200).json({
-            message: documents.length > 0 ? 'Batch metrics aggregated.' : 'No documents to aggregate.',
-            // Use consistent naming if needed, e.g., batchSummary
-            batchMetrics: updatedBatchSummary
+            message: documents.length > 0 ? 'Batch metrics aggregated.' : 'No completed documents to aggregate.',
+            batchMetrics: updatedBatchSummary // Contains the aggregated values
         });
 
-    } catch (error) { next(error); }
+    } catch (error) {
+        console.error(`Error aggregating metrics for batch ${batchId}:`, error);
+        next(error);
+    }
 };
 
 // --- UPDATED Preview Document (Using root option) ---
