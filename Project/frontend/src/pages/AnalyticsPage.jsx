@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-    FiTrendingUp, FiBarChart2, FiPieChart, FiRefreshCcw, FiLoader, FiAlertTriangle,
+    FiTrendingUp, FiBarChart2, FiBarChart, FiPieChart, FiRefreshCcw, FiLoader, FiAlertTriangle,
     FiChevronLeft, FiChevronRight, FiInbox, FiInfo, FiCheckCircle, FiXCircle, FiClock,
     FiTarget // Added FiTarget for Accuracy Trend Title
 } from 'react-icons/fi';
