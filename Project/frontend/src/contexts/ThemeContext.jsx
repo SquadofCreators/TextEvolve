@@ -2,12 +2,12 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
 const ThemeContext = createContext({
-  theme: 'light',         // 'light' | 'dark' | 'system'
+  theme: 'light',
   setTheme: () => {},
 });
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('system');
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
