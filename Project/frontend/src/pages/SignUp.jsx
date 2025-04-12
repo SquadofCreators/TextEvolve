@@ -173,7 +173,7 @@ function Signup() {
 
     // Shared Left Section Component (Optional Refactor)
     const LeftBannerSection = () => (
-        <div className={`md:w-1/2 min-h-[50vh] md:min-h-screen flex flex-col items-center justify-around p-4 sm:p-8 relative ${otpSent ? 'bg-gray-100 dark:bg-gray-800' : ''}`}>
+        <div className="md:w-1/2 min-h-dvh md:min-h-screen flex flex-col items-center justify-around p-4 sm:p-8 relative">
             <img src={BannerImg} alt="Signup Banner" className={`absolute inset-0 w-full h-full object-cover ${otpSent ? 'opacity-10 dark:opacity-20' : 'opacity-90 dark:opacity-70'}`} />
             {!otpSent && <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-black/10 to-black/30 dark:from-black/30 dark:via-black/50 dark:to-black/70"></div>}
 
@@ -183,7 +183,7 @@ function Signup() {
                     <h1 className="text-gray-800 dark:text-gray-200 text-3xl font-extrabold tracking-wider mt-1">TextEvolve</h1>
                 </div>
                  <p className="text-3xl font-bold tracking-wider text-gray-700 dark:text-gray-100">
-                    Digitize <span className={otpSent ? "text-indigo-600 dark:text-indigo-400" : "text-orange-400"}>History,</span> <br /> Empower the Future
+                    Digitize <span className={otpSent ? "text-orange-600 dark:text-orange-400" : "text-orange-400"}>History,</span> <br /> Empower the Future
                 </p>
                 <p className="mt-2 text-sm md:text-base text-gray-500 dark:text-gray-200">
                     {otpSent
@@ -213,12 +213,12 @@ function Signup() {
     // --- Conditional Rendering: Signup Form or OTP Form ---
 
     return (
-        <div className="flex flex-col md:flex-row min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">
+        <div className="flex flex-col md:flex-row min-h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-300">
 
             <LeftBannerSection /> {/* Render shared left section */}
 
             {/* Right Section: Changes based on otpSent state */}
-            <div id="signup-section" className="relative md:w-1/2 min-h-[50vh] md:min-h-screen flex flex-col justify-center items-center p-6 sm:p-8 md:p-12 bg-white dark:bg-gray-800">
+            <div id="signup-section" className="relative md:w-1/2 min-h-dvh md:min-h-screen flex flex-col justify-center items-center p-6 sm:p-8 md:p-10 bg-white dark:bg-gray-800">
                 <div className="max-w-md w-full mx-auto">
 
                     {/* Logo visible on small screens */}
@@ -231,7 +231,7 @@ function Signup() {
                                  <h2 className="font-bold text-3xl text-gray-800 dark:text-gray-100">Verify Your Email</h2>
                                 <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
                                     Enter the 6-digit code sent to <br/>
-                                    <span className='font-medium text-indigo-600 dark:text-indigo-400'>{email}</span>
+                                    <span className='font-medium text-orange-600 dark:text-orange-400'>{email}</span>
                                 </p>
                              </div>
 
@@ -260,7 +260,7 @@ function Signup() {
                                         onChange={(e) => handleOtpChange(e, index)}
                                         // onKeyDown={(e) => handleOtpKeyDown(e, index)} // Add keydown if more complex backspace needed
                                         disabled={isVerifyingOtp}
-                                        className="w-12 h-12 md:w-14 md:h-14 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-xl md:text-2xl font-medium focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50"
+                                        className="w-12 h-12 md:w-14 md:h-14 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-xl md:text-2xl font-medium focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50"
                                         autoComplete="off"
                                     />
                                 ))}
@@ -271,7 +271,7 @@ function Signup() {
                                 <button
                                     onClick={handleOtpVerify}
                                     disabled={isVerifyingOtp}
-                                    className="w-full sm:w-auto px-8 py-2.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2 font-medium"
+                                    className="w-full sm:w-auto px-8 py-2.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition disabled:opacity-60 flex items-center justify-center gap-2 font-medium"
                                 >
                                     {isVerifyingOtp ? <><FiLoader className="animate-spin h-5 w-5"/> Verifying...</> : 'Verify OTP'}
                                 </button>

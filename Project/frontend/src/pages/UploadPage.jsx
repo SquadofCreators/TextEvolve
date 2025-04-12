@@ -261,7 +261,7 @@ function UploadPage() {
         </h1>
 
         {/* --- Upload Section --- */}
-        <div className="p-6 rounded-lg mb-8">
+        <div className="rounded-lg mb-8">
 
           {/* Batch Name Input */}
           <div className="mb-4">
@@ -432,33 +432,45 @@ function UploadPage() {
           ) : batches.length > 0 ? (
             <ul className="space-y-3">
               {batches.map((batch) => (
-                <li key={batch.id} className={`flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg transition-colors duration-300 ${
+                <li key={batch.id} className={`flex flex-col md:flex-row justify-between items-start p-4 border rounded-lg transition-colors duration-300 ${
                   batch.id === createdBatchId ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}>
-                  <div className="flex-grow mb-2 sm:mb-0">
+                  <div className="w-full flex flex-col mb-2 sm:mb-0">
                     <Link to={`/batch/${batch.id}`} className="hover:underline">
                         <p className="font-semibold text-base text-gray-900 dark:text-gray-100">
                           {batch.name || `Batch ${batch.id.substring(0, 8)}...`}
                         </p>
                     </Link>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="w-full flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <span>Files: {batch.totalFileCount ?? 0}</span>
                         <span>Size: {formatBytes(batch.totalFileSize)}</span>
                         <span>Status: <span className={`font-medium ${batch.status === 'COMPLETED' ? 'text-green-600 dark:text-green-400' : batch.status === 'FAILED' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>{batch.status || 'N/A'}</span></span>
                         <span>Created: {formatDate(batch.createdAt)}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <Link to={`/batch/${batch.id}`} title="View Batch Details" className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                      <IoArrowForward className="w-5 h-5" />
-                    </Link>
+                  <div className="w-full md:w-max flex items-center justify-end md:justify-between gap-3 flex-shrink-0">
+                    
                     <button
                       onClick={() => handleDeleteBatch(batch.id, batch.name)}
-                      className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      className="flex items-center justify-center gap-1 px-3 py-2 md:py-3 text-white bg-red-500 dark:bg-red-500 hover:text-red-200 dark:hover:text-red-200 rounded-md transition duration-200 cursor-pointer"
                       title="Delete Batch"
                     >
-                      <FiTrash className="w-5 h-5" />
+                      {/* <span className='text-sm md:hidden'>
+                        Delete Batch
+                      </span> */}
+                      <FiTrash />
                     </button>
+
+                    <Link 
+                      to={`/batch/${batch.id}`} title="View Batch Details" 
+                      className="flex items-center justify-center gap-1 px-3 py-2 md:py-3 text-white bg-blue-600 dark:bg-blue-500 hover:text-blue-200 dark:hover:text-blue-200 rounded-md transition duration-200"
+                    >
+                      {/* <span className='text-sm md:hidden'>
+                        View & Extract
+                      </span> */}
+                      <IoArrowForward />
+                    </Link>
+                    
                   </div>
                 </li>
               ))}

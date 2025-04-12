@@ -296,7 +296,7 @@ function AnalyticsPage() {
                 ) : error.summary ? (
                      <ErrorDisplay message={error.summary} />
                 ) : summaryData ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         {/* Total Documents Card */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-100 dark:border-gray-700">
                              <div className="flex items-center justify-between mb-1">

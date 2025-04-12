@@ -374,7 +374,7 @@ function UserProfile() {
             <div className="">
                 <PageHeader title="User Profile" showBackArrow={true}/>
                 {/* Top Profile Section */}
-                <div className="flex items-center gap-6 border-b border-gray-300 dark:border-gray-700 pb-6 mb-6 text-center">
+                <div className="flex flex-col md:flex-row items-center gap-6 border-b border-gray-300 dark:border-gray-700 pb-6 mb-6 text-center">
                     {/* Profile Picture + Upload */}
                     <div className="relative group">
                         {avatarSrc ? (
@@ -449,7 +449,7 @@ function UserProfile() {
                     )}
 
                     {/* User Name and Email */}
-                    <div className='flex flex-col items-start justify-center'>
+                    <div className='flex flex-col items-center md:items-start justify-center'>
                         {editing ? (
                             <input
                                 name="name"
@@ -684,16 +684,22 @@ function UserProfile() {
                             <span>{updateError}</span>
                         </div>
                     )}
-                    <button
-                        onClick={handleDeleteAccount}
-                        disabled={isUpdating || isUploadingPic}
-                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline text-sm disabled:opacity-50 inline-flex items-center gap-1"
-                    >
-                        <FiTrash2/> Delete My Account
-                    </button>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Permanently remove your account and all associated data. This action cannot be undone.
-                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-start justify-between md:items-center gap-4 mt-4">
+                        <div>
+                            <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Delete Account</h5>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                Permanently delete your account. All your data will be removed and cannot be recovered.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleDeleteAccount}
+                            disabled={isUpdating || isUploadingPic}
+                            className="inline-flex items-center gap-2 border px-2 py-1 rounded-md hover:text-white hover:bg-red-500 text-red-600 dark:text-red-400 text-sm disabled:opacity-50 transition-all duration-300 cursor-pointer"
+                        >
+                            <FiTrash2/> Delete My Account
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

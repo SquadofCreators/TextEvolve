@@ -175,7 +175,7 @@ export const login = async (req, res, next) => {
                 name: updatedUser.name,
                 isVerified: updatedUser.isVerified,
                 lastLoginAt: updatedUser.lastLoginAt,
-                // Do NOT send back password, otp, ip, device info etc. by default
+                profilePictureUrl: updatedUser.profilePictureUrl || null, 
             },
         });
 

@@ -69,6 +69,8 @@ function Navbar() {
     return `https://placehold.co/200x200?text=${user?.name?.charAt(0) || 'U'}`;
   };
 
+  console.log("Navbar rendered with user:", user); // Debugging line
+
   return (
     <header className="sticky top-0 w-full z-50 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 shadow transition-colors">
       {/* Top Bar (Desktop & Mobile) */}

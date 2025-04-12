@@ -34,17 +34,17 @@ function SingleDocCard({
   const getStatusIndicator = (status) => {
     switch (status) {
       case 'COMPLETED':
-        return { icon: <FiCheckSquare className="text-green-500" />, color: "text-green-600 dark:text-green-400" };
+        return { icon: <FiCheckSquare />, color: "text-green-600 dark:text-green-400" };
       case 'PROCESSING':
-        return { icon: <FiLoader className="text-blue-500 animate-spin" />, color: "text-blue-600 dark:text-blue-400" };
+        return { icon: <FiLoader />, color: "text-blue-600 dark:text-blue-400" };
       case 'PENDING':
       case 'UPLOADED':
       case 'NEW': // Assuming NEW might apply here too
-        return { icon: <FiCpu className="text-yellow-500" />, color: "text-yellow-600 dark:text-yellow-400" };
+        return { icon: <FiCpu />, color: "text-yellow-600 dark:text-yellow-400" };
       case 'FAILED':
-        return { icon: <FiAlertCircle className="text-red-500" />, color: "text-red-600 dark:text-red-400" };
+        return { icon: <FiAlertCircle />, color: "text-red-600 dark:text-red-400" };
       default:
-        return { icon: <MdOutlineInfo className="text-gray-500" />, color: "text-gray-600 dark:text-gray-400" };
+        return { icon: <MdOutlineInfo />, color: "text-gray-600 dark:text-gray-400" };
     }
   };
 

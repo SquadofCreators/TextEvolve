@@ -283,9 +283,9 @@ const ExtractTextPage = () => {
   // --- Render ---
   return (
     <div className="flex-1 h-full p-4 md:p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
-      <PageHeader title="Text Extraction Progress" showBackArrow={true} />
+      <PageHeader title="Extraction Progress" showBackArrow={true} />
 
-      <div className="max-w-2xl mx-auto">
+      <div className="px-3 max-w-2xl mx-auto">
         {/* Header Info */}
         <div className="mt-6 mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
@@ -302,7 +302,7 @@ const ExtractTextPage = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {" "}
             ID:{" "}
-            <span className="font-medium text-indigo-600 dark:text-indigo-400 break-all">
+            <span className="font-medium text-orange-600 dark:text-orange-400 break-all">
               {batchId}
             </span>{" "}
           </p>
@@ -313,10 +313,10 @@ const ExtractTextPage = () => {
           <div
             className={`h-full rounded-full transition-width duration-300 ease-linear ${
               isCompleted
-                ? "bg-green-500"
+                ? "bg-orange-500"
                 : isFailed
                 ? "bg-red-500"
-                : "bg-indigo-600"
+                : "bg-orange-400"
             }`}
             style={{ width: `${progress}%` }}
           ></div>
@@ -347,13 +347,13 @@ const ExtractTextPage = () => {
                 <div className="flex-shrink-0">
                   {" "}
                   {finalComplete || (step.key === "complete" && isCompleted) ? (
-                    <CheckCircle className="w-6 h-6 text-green-500" />
+                    <CheckCircle className="w-6 h-6 text-orange-500" />
                   ) : isFailed && step.key === "fail" ? (
                     <AlertTriangle className="w-6 h-6 text-red-500" />
                   ) : isCompletedStep ? (
-                    <CheckCircle className="w-6 h-6 text-green-500" />
+                    <CheckCircle className="w-6 h-6 text-orange-500" />
                   ) : isActive && isProcessing ? (
-                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                    <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
                   ) : (
                     <Circle className="w-6 h-6 text-gray-300 dark:text-gray-600" />
                   )}{" "}
@@ -361,13 +361,13 @@ const ExtractTextPage = () => {
                 <div
                   className={`text-sm md:text-base font-medium ${
                     finalComplete || (step.key === "complete" && isCompleted)
-                      ? "text-green-600 dark:text-green-400"
+                      ? "text-orange-600 dark:text-orange-400"
                       : isFailed && step.key === "fail"
                       ? "text-red-600 dark:text-red-400"
                       : isCompletedStep
                       ? "text-gray-700 dark:text-gray-300"
                       : isActive
-                      ? "text-indigo-600 dark:text-indigo-400"
+                      ? "text-orange-400 dark:text-orange-400"
                       : "text-gray-400 dark:text-gray-500"
                   }`}
                 >
@@ -407,7 +407,7 @@ const ExtractTextPage = () => {
               </button>
               <button
                 onClick={handleViewResults}
-                className="w-full sm:w-auto px-6 py-2.5 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Eye size={18} /> View Results
               </button>{" "}

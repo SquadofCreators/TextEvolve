@@ -267,7 +267,7 @@ const ExtractionResultsPage = () => {
 
    // --- Main Results Display ---
   return (
-    <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+    <div className="flex-1 p-4 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
       <PageHeader title="Extraction Results" showBackArrow={true} backPath={`/batch/${batchId}`} />
 
       {/* Batch Info Header  */}

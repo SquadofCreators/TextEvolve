@@ -77,7 +77,7 @@ function Login() {
     <div className="flex flex-col md:flex-row min-h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-300">
 
       {/* Left Section: Welcome + Image (Keep structure as is) */}
-      <div className="md:w-1/2 min-h-[50vh] md:min-h-screen flex flex-col items-center justify-around p-4 sm:p-8 relative">
+      <div className="md:w-1/2 min-h-dvh md:min-h-screen flex flex-col items-center justify-around p-4 sm:p-8 relative">
         <img src={BannerImg} alt="Login Banner" className="absolute inset-0 w-full h-full object-cover opacity-90 dark:opacity-70" />
         {/* Overlay for better text visibility */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-black/10 to-black/30 dark:from-black/30 dark:via-black/50 dark:to-black/70"></div>
@@ -116,7 +116,7 @@ function Login() {
       </div>
 
       {/* Right Section: Login Form */}
-      <div id="login-section" className="relative md:w-1/2 min-h-[50vh] md:min-h-screen flex flex-col justify-center items-center p-6 sm:p-8 md:p-12 bg-white dark:bg-gray-800">
+      <div id="login-section" className="relative md:w-1/2 min-h-dvh md:min-h-screen flex flex-col justify-center items-center p-6 sm:p-8 md:p-12 bg-white dark:bg-gray-800">
         <div className="max-w-md w-full mx-auto">
           {/* Logo visible on small screens */}
           <img src={Logo} alt="TextEvolve Logo" className="w-20 md:w-24 mx-auto mb-6 md:hidden" />
