@@ -69,8 +69,6 @@ function Navbar() {
     return `https://placehold.co/200x200?text=${user?.name?.charAt(0) || 'U'}`;
   };
 
-  console.log("Navbar rendered with user:", user); // Debugging line
-
   return (
     <header className="sticky top-0 w-full z-50 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 shadow transition-colors">
       {/* Top Bar (Desktop & Mobile) */}
@@ -112,7 +110,7 @@ function Navbar() {
               <img
                 src={getAvatarSrc()}
                 alt="User avatar"
-                crossOrigin="anonymous"
+                crossOrigin='anonymous'
                 className="w-8 h-8 rounded-full border border-orange-500 object-cover"
               />
               <div className="leading-tight text-left">
@@ -180,6 +178,7 @@ function Navbar() {
               <img
                 src={getAvatarSrc()}
                 alt="User avatar"
+                crossOrigin='anonymous'
                 className="w-10 h-10 rounded-full border border-orange-500 object-cover"
               />
               <div>
