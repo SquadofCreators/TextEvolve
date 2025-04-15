@@ -44,7 +44,6 @@ Developed by **Team Dynamic Dreamers**, Kathir College of Engineering, Coimbator
 * MongoDB Server (local or cloud instance like MongoDB Atlas)
 * Git
 
-
 **Steps:**
 
 1. **Clone the repository:**
@@ -128,6 +127,21 @@ textevolve-product/
 ├── scripts/            # Utility scripts (e.g., DB seeding)
 └── README.md
 ```
+
+## Team
+
+This project was proudly developed by **Team Dynamic Dreamers**, a group of passionate students from the **[Department of Artificial Intelligence and Data Science]** at **Kathir College of Engineering**, Coimbatore, Tamil Nadu, India (as of April 2025).
+
+**Team Members:**
+
+* **Yuva Nandhini M** - Project Lead / AI/ML Developer - [LinkedIn](https://www.linkedin.com/in/yuvanandhinim) / [GitHub](https://github.com/YUVANANDHINI1)
+* **Praveenkumar S** - AI/MERN Developer - [LinkedIn](https://www.linkedin.com/in/praveensiva77) / [GitHub](https://github.com/PraveenSiva77)
+* **Sibi Siddharth S** - AI/MERN Developer - [LinkedIn](https://www.linkedin.com/in/sibisiddharths) / [GitHub](https://github.com/sibisiddharth8)
+* **Uma Maheswari P** - AI/ML Developer - [LinkedIn](https://www.linkedin.com/in/uma-maheswari-1530b8256) / [GitHub](https://github.com/Uma20042007)
+
+**Under the Guidance of:**
+
+* **Mrs. Kavitha M** - *Assistant Professor*, Department of Artificial Intelligence and Data Science
 
 ## Contributing
 
