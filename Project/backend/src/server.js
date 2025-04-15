@@ -3,10 +3,9 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs'; // <--- IMPORT fs MODULE HERE
+import fs from 'fs';
 
 // Load environment variables FIRST
 dotenv.config();
@@ -21,7 +20,7 @@ import userRoutes from './routes/userRoutes.js';
 import batchRoutes from './routes/batchRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 
-// Import middleware
+// Import error handler middleware
 import { errorHandler } from './middleware/errorMiddleware.js';
 
 const app = express();
@@ -36,20 +35,13 @@ app.use(helmet());
 console.log(`Configuring CORS to allow all origins`);
 app.use(cors());  // Allow all origins
 
-// 3. Rate Limiting (Apply general limiter early)
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false
-});
-app.use(generalLimiter);
+// 3. (Removed Rate Limiting Middleware)
 
 // 4. Body Parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 5. HTTP Request Logger (Optional)
+// 5. HTTP Request Logger (Optional, used in development)
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
@@ -57,10 +49,10 @@ if (process.env.NODE_ENV === 'development') {
 // --- Static File Serving ---
 const UPLOAD_DIR_FOR_STATIC = process.env.UPLOAD_DIR || path.resolve('./uploads');
 
-// Check if upload directory exists, create if desired (using imported fs)
+// Check if upload directory exists, create if desired
 if (!fs.existsSync(UPLOAD_DIR_FOR_STATIC)) {
      console.warn(`WARNING: Upload directory for static serving does not exist: ${UPLOAD_DIR_FOR_STATIC}`);
-     // Optionally create it:
+     // Optionally, create the directory by uncommenting the following block:
      /*
      try {
          fs.mkdirSync(UPLOAD_DIR_FOR_STATIC, { recursive: true });
@@ -82,30 +74,20 @@ app.use('/uploads', express.static(UPLOAD_DIR_FOR_STATIC, {
 
 // --- API Routes ---
 app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date() }));
-
-// Apply specific rate limiter to sensitive auth routes
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 15,
-    message: 'Too many authentication attempts, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false
-});
-app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // --- Error Handling ---
-// Not found handler
+// Not Found Handler
 app.use((req, res, next) => {
     const error = new Error(`Not Found - ${req.originalUrl}`);
     res.status(404);
     next(error);
 });
 
-// General error handler
+// General Error Handler
 app.use(errorHandler);
 
 // --- Start Server ---
