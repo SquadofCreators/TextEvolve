@@ -141,6 +141,7 @@ export default function Sidebar() {
           p-2 rounded-full shadow hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none
           transition-colors duration-200
           z-10
+          cursor-pointer
         `}
       >
         {isMinimized ? <IconChevronRight /> : <IconChevronLeft />}
