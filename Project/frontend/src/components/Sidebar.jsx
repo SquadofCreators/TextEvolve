@@ -1,45 +1,17 @@
 // src/components/Sidebar.jsx
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext'; // Assuming useTheme is still needed elsewhere
+import { useTheme } from '../contexts/ThemeContext'; 
 import { useAuth } from '../contexts/AuthContext';
-// Import icons - replace with your actual icon library e.g., lucide-react
-// import { ChevronLeft, ChevronRight } from 'lucide-react';
-import ThemeToggle from './utility/ThemeToggle'; // Assuming ThemeToggle might be added later
+import ThemeToggle from './utility/ThemeToggle'; 
 import { navLinks } from '../data/navLinks';
 
 import TextEvolveLogo from '../assets/textevolve-logo.svg';
 
-// Placeholder Icons (replace with actual icons)
-const IconChevronLeft = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    className="w-5 h-5"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-  </svg>
-);
-const IconChevronRight = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    className="w-5 h-5"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-  </svg>
-);
-
 export default function Sidebar() {
   const { logout } = useAuth();
   const [activeLink, setActiveLink] = useState('Dashboard');
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
 
   const handleLinkClick = (name) => () => {
     setActiveLink(name);
@@ -70,6 +42,8 @@ export default function Sidebar() {
         transition-all duration-300 ease-in-out
         ${isMinimized ? 'md:w-20' : 'md:w-60'}
       `}
+      onMouseEnter={() => setIsMinimized(false)}
+      onMouseLeave={() => setIsMinimized(true)}
     >
       {/* Logo */}
       <Link
@@ -77,11 +51,10 @@ export default function Sidebar() {
         className={`flex items-center gap-2 mb-8 ${isMinimized ? 'md:justify-center' : ''}`}
         title="Text Evolve Home"
       >
-        <div>
-          <span className="flex items-center font-righteous font-bold tracking-wide text-xl text-orange-500">
-            <img src={TextEvolveLogo} alt="Text Evolve Logo" className="w-8 h-8" />
-          </span>
+        <div className="flex items-center font-righteous font-bold tracking-wide text-xl text-orange-500 transition-all">
+          <img src={TextEvolveLogo} alt="Text Evolve Logo" className="w-8 h-8" />
         </div>
+
         {/* Hide text when minimized */}
         <div className={`text-xl font-righteous font-bold tracking-widest ${isMinimized ? 'md:hidden' : 'md:block'}`}>
           <span className="text-orange-500">Text</span>Evolve
@@ -131,21 +104,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </div>
-
-      {/* Improved Sidebar Toggle Button */}
-      <button
-        onClick={toggleSidebar}
-        className={`
-          absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2
-          bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
-          p-2 rounded-full shadow hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none
-          transition-colors duration-200
-          z-10
-          cursor-pointer
-        `}
-      >
-        {isMinimized ? <IconChevronRight /> : <IconChevronLeft />}
-      </button>
     </aside>
   );
 }

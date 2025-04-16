@@ -370,9 +370,9 @@ function UserProfile() {
     const avatarSrc = profilePicPreview || (import.meta.env.VITE_API_URL_IMAGE_BASE + userDisplayData?.profilePictureUrl);
    
     return (
-        <div className="flex-1 p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <div className="flex-1 p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <PageHeader title="User Profile" showBackArrow={true}/>
             <div className="">
-                <PageHeader title="User Profile" showBackArrow={true}/>
                 {/* Top Profile Section */}
                 <div className="flex flex-col md:flex-row items-center gap-6 border-b border-gray-300 dark:border-gray-700 pb-6 mb-6 text-center">
                     {/* Profile Picture + Upload */}

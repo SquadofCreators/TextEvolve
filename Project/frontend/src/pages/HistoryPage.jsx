@@ -211,7 +211,7 @@ function HistoryPage() {
 
     // Render Main Content
     return (
-        <div className="flex-1 h-full p-4 md:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg">
+        <div className="flex-1 h-full p-4 md:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
           <PageHeader title="Conversion History" subtitle="Review and filter your past document batches" />
 
           {/* --- Search and Filter Controls --- */}

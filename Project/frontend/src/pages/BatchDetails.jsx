@@ -259,7 +259,7 @@ const BatchDetails = () => {
 
   // --- Main Component Render ---
   return (
-    <div className="flex-1 h-full px-3 py-6 md:p-6 overflow-y-auto bg-gray-100 dark:bg-gray-900 rounded-lg">
+    <div className="flex-1 h-full px-3 py-6 md:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
       <PageHeader title="Batch Details" showBackArrow={true}/>
 
       {/* Batch Metadata Section */}

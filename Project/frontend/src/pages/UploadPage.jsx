@@ -254,7 +254,7 @@ function UploadPage() {
   // --- Render ---
 
   return (
-    <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+    <div className="flex-1 p-6 h-full overflow-y-auto bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 text-center mb-6">
           Create New Batch & Upload Documents

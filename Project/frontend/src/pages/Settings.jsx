@@ -19,18 +19,29 @@ const Settings = () => {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-xl shadow-lg p-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
+    <div className="flex-1 p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <PageHeader
+        title="Settings"
+      />
+
       <div className="max-w-5xl mx-auto px-2 py-4">
-        {/* Header Navigation */}
-        <PageHeader 
-          title="Settings" 
-          link="/" 
-          heading="Manage Your Preferences"
-          description="Configure your account details, privacy settings, notifications, and more."
-        />
 
         {/* Settings Sections */}
         <section className="space-y-10">
+          
+          <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 transition-colors duration-200'>
+            <h2 className="text-2xl font-bold mb-4">Display Settings</h2>
+            <div className="space-y-4">
+              {displaySettingsData.map((setting, index) => (
+                <SettingControl
+                  key={index}
+                  data={setting}
+                  isLast={index === displaySettingsData.length - 1}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* Account Settings */}
           <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 transition-colors duration-200'>
             <h2 className="text-2xl font-bold mb-4">Account Settings</h2>

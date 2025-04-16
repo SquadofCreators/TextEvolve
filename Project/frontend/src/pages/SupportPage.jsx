@@ -57,7 +57,7 @@ const SupportPage = () => {
   
 
   return (
-    <div className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-lg border-1 border-gray-200 dark:border-gray-700 transition-colors rounded-xl">
+    <div className="bg-gray-50 text-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-lg border-1 border-gray-200 dark:border-gray-700 transition-colors rounded-xl">
 
 
       <div className="max-w-7xl mx-auto px-4 py-6">

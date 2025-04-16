@@ -284,7 +284,7 @@ function AnalyticsPage() {
 
     // --- Render Component ---
     return (
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-100 dark:bg-gray-900 rounded-lg">
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
             <PageHeader title="Analytics Dashboard" subtitle="View your document conversion statistics" />
 
             {/* --- Stats Cards Section --- */}

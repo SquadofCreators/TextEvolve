@@ -149,9 +149,9 @@ function LandingPage() {
 
     // --- Rendering ---
     return (
-        <div className="px-4 py-6 md:px-6 md:py-8"> {/* Adjusted padding */}
+        <div className="px-4 py-6 md:px-4 md:py-4"> {/* Adjusted padding */}
             {/* Banner Section (keep as is) */}
-            <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 select-none shadow-lg mb-10 md:mb-12">
+            <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 select-none shadow-lg mb-10 md:mb-5">
                 <img src={BannerImg} alt="Digitization Banner" className="object-cover w-full h-56 md:h-64"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent dark:from-black/80 dark:via-black/40"></div>
                 <div className="absolute inset-0 flex flex-col items-center justify-between py-6 px-4 gap-3 text-white">

@@ -9,7 +9,7 @@ function MainLayout({ children }) {
         <Sidebar />
         <div className='relative w-full flex flex-col h-screen overflow-y-hidden'>
             <Navbar />
-            <div className='flex-1 overflow-y-auto md:p-4 mb-6'>
+            <div className='flex-1 overflow-y-auto md:p-3 mb-6'>
                 {children}
             </div>
             {/* Designed by */}

@@ -554,7 +554,7 @@ const ExtractionResultsPage = () => {
 
   // --- Final Render ---
   return (
-    <div className="flex-1 p-4 md:p-6 h-full overflow-y-auto bg-gray-50 dark:bg-gray-900">
+    <div className="flex-1 p-4 md:p-6 h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
       <PageHeader title="Extraction Results" showBackArrow={true} backPath={`/batch/${batchId}`} />
       {renderContent()}
     </div>

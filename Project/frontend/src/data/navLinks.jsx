@@ -8,13 +8,20 @@ import {
   FiLogOut,
 } from "react-icons/fi";
 
+import { MdSpaceDashboard } from "react-icons/md";
+import { LuScanQrCode } from "react-icons/lu";
+import { TbPresentationAnalytics } from "react-icons/tb";
+import { IoFileTrayFullOutline } from "react-icons/io5";
+
+import { FaRegFileLines } from "react-icons/fa6";
+
 import { TiDocumentText } from "react-icons/ti";
 
 const navLinks = (handleLogout) => [
   { 
     name: "Dashboard", 
     action: "/", 
-    icon: <FiGrid className="w-5 h-5" />,
+    icon: <MdSpaceDashboard className="w-5 h-5" />,
     showOnMobile: true,
     showOnDesktop: true,
     showOnTop: true,
@@ -22,7 +29,7 @@ const navLinks = (handleLogout) => [
   { 
     name: "Upload", 
     action: "/upload", 
-    icon: <FiUpload className="w-5 h-5" />,
+    icon: <LuScanQrCode className="w-5 h-5" />,
     showOnMobile: true,
     showOnDesktop: true,
     showOnTop: true,
@@ -30,7 +37,7 @@ const navLinks = (handleLogout) => [
   {
     name: "Analytics",
     action: "/analytics",
-    icon: <FiBarChart2 className="w-5 h-5" />,
+    icon: <TbPresentationAnalytics className="w-5 h-5" />,
     showOnMobile: true,
     showOnDesktop: true,
     showOnTop: true,
@@ -38,7 +45,7 @@ const navLinks = (handleLogout) => [
   { 
     name: "History", 
     action: "/history", 
-    icon: <FiClock className="w-5 h-5" />,
+    icon: <IoFileTrayFullOutline className="w-5 h-5" />,
     showOnMobile: true,
     showOnDesktop: true,
     showOnTop: true, 
@@ -46,7 +53,7 @@ const navLinks = (handleLogout) => [
   {
     name: "Docs",
     action: "/documentation",
-    icon: <TiDocumentText className="w-5 h-5" />,
+    icon: <FaRegFileLines className="w-5 h-5" />,
     showOnMobile: true,
     showOnDesktop: true,
     showOnTop: false,
