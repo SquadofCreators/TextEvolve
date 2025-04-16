@@ -18,6 +18,8 @@ import Documentation from '../pages/Documentation';
 import BatchDetails from '../pages/BatchDetails';
 import ExtractTextPage from '../pages/ExtractTextPage';
 import ExtractionResultsPage from '../pages/ExtractionResultsPage';
+import SettingsPage from '../pages/SettingsPage';
+import CommunityPage from '../pages/CommunityPage';
 
 const protectedRoutes = [
   { path: '/', element: <LandingPage /> },
@@ -26,7 +28,8 @@ const protectedRoutes = [
   { path: '/analytics', element: <AnalyticsPage /> },
   { path: '/history', element: <HistoryPage /> },
   { path: '/support', element: <SupportPage /> },
-  { path: '/settings', element: <Settings /> },
+  { path: '/settings', element: <SettingsPage /> },
+  { path: '/community', element: <CommunityPage /> },
   { path: '/documentation', element: <Documentation /> },
   { path: '/batch/:batchId', element: <BatchDetails /> },
   { path: '/extract-text/:batchId', element: <ExtractTextPage /> },
