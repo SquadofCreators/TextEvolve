@@ -33,7 +33,7 @@ const EnhancedTextViewer = ({
                     </button>
                 </div>
             </div>
-            <div className="p-4 min-h-80 overflow-y-auto bg-emerald-50 dark:bg-emerald-900/30">
+            <div className="p-4 min-h-80 overflow-x-scroll bg-emerald-50 dark:bg-emerald-900/30">
                 <pre className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-200 font-mono">
                     {content}
                 </pre>
