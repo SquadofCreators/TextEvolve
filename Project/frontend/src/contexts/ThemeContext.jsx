@@ -7,7 +7,7 @@ const ThemeContext = createContext({
 });
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState('light'); // Default to system theme
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
