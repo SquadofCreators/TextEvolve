@@ -219,7 +219,7 @@ function ConnectMobilePage() {
         try {
             // --- API Call to Generate ID ---
                 // Adjust URL if necessary
-            const response = await fetch('http://localhost:5000/api/connect/generate-id', {
+            const response = await fetch( `${import.meta.env.VITE_API_URL}/api/connect/generate-id`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -306,7 +306,7 @@ function ConnectMobilePage() {
     let success = false;
     try {
       const response = await fetch(
-        "http://localhost:5000/api/connect/validate-id",
+        `${import.meta.env.VITE_API_URL}/api/connect/validate-id`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
