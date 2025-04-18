@@ -116,7 +116,7 @@ const BatchDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [batchId, navigate, location]); // Added navigate/location dependencies
+  }, [batchId, navigate, location]); 
 
   useEffect(() => {
     fetchBatch();

@@ -192,7 +192,7 @@ function Navbar() {
           </div>
 
           {/* Mobile Search Bar */}
-          <div className="p-4">
+          {/* <div className="p-4">
             <div className="relative">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -201,7 +201,7 @@ function Navbar() {
                 className="w-full pl-10 pr-4 py-2 rounded-md outline-none border border-gray-300 focus:border-orange-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
               />
             </div>
-          </div>
+          </div> */}
 
           {/* Navigation Links */}
           <nav className="p-4">

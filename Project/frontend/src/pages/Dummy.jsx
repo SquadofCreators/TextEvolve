@@ -1,337 +1,464 @@
-// src/pages/Signup.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { IoArrowForward, IoEye, IoEyeOff, IoArrowBack } from 'react-icons/io5';
-import { useAuth } from '../contexts/AuthContext';
-import mailService from '../services/mailService';
-import { registerUser } from '../services/authServices';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeCanvas } from 'qrcode.react';
+import { isMobile } from 'react-device-detect';
+import {
+    FiSmartphone, FiType, FiCheckCircle, FiLoader,
+    FiAlertCircle, FiCopy, FiRefreshCw, FiCamera, FiUploadCloud, FiXCircle, FiUser
+} from 'react-icons/fi';
+import { FaQrcode } from "react-icons/fa";
+import { Html5Qrcode } from 'html5-qrcode';
+import { useAuth } from '../contexts/AuthContext'; // Assuming you have this context
 
-import BannerImg from '../assets/images/banner-bg.jpg';
-import Logo from '../assets/textevolve-logo.svg';
+// --- Configuration ---
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsHost = window.location.hostname;
+// Use an environment variable or default to common dev port / standard ports
+const wsPort = import.meta.env.REACT_APP_WEBSOCKET_PORT || (window.location.hostname === 'localhost' ? '5000' : (window.location.port || (wsProtocol === 'wss:' ? 443 : 80)));
+const WEBSOCKET_URL = `${wsProtocol}//${wsHost}:${wsPort}`;
+console.log("Attempting WebSocket connection to:", WEBSOCKET_URL);
+// --------------------
 
-// Logos
-import TNLogo from '../assets/images/logos/tn-logo.svg';
-import NMLogo from '../assets/images/logos/nm-logo.svg';
-import NTLogo from '../assets/images/logos/nt-logo.svg';
-import AULogo from '../assets/images/logos/au-logo.svg';
-import KCELogo from '../assets/images/logos/kce-logo.svg';
 
-// Logos Data
-export const creditsLogos = [
-  { name: 'Tamil Nadu Govt.', logo: TNLogo, link: 'https://www.tn.gov.in/' },
-  { name: 'Naan Mudhalvan', logo: NMLogo, link: 'https://naanmudhalvan.tn.gov.in/' },
-  { name: 'Niral Thiruvizha', logo: NTLogo, link: 'https://niralthiruvizha.in/' },
-  { name: 'Anna University', logo: AULogo, link: 'https://www.annauniv.edu/' },
-  { name: 'Kathir College of Engineering', logo: KCELogo, link: 'https://www.kathir.ac.in/' },
-];
+function ConnectMobilePage() {
+    // --- Component State ---
+    const [connectionId, setConnectionId] = useState('');
+    const [connectionStatus, setConnectionStatus] = useState('initializing'); // 'initializing', 'waiting', 'connecting', 'connected', 'error', 'ws_error', 'ws_closed'
+    const [errorMessage, setErrorMessage] = useState('');
+    const [mobileEnteredId, setMobileEnteredId] = useState('');
+    const [isConnecting, setIsConnecting] = useState(false); // Mobile connecting loading state
+    const [isGeneratingId, setIsGeneratingId] = useState(!isMobile); // Desktop ID generation loading state
+    const [showScanner, setShowScanner] = useState(false); // Mobile scanner visibility
+    const [scannerError, setScannerError] = useState(''); // Mobile scanner specific errors
+    const [connectedUserInfo, setConnectedUserInfo] = useState(null); // Store user info received on mobile connect
 
-function Signup() {
-  const navigate = useNavigate();
-  const { signup } = useAuth();
+    // --- Refs and Context ---
+    const containerRef = useRef(null);
+    const socketRef = useRef(null); // Ref to hold the WebSocket instance
+    const qrReaderId = "qr-reader-element"; // ID for the scanner div
+    const { user, token } = useAuth(); // Get user and token from context
+     // Ref to access latest connectionId inside WS handlers without causing effect re-run just for comparison
+     const connectionIdRef = useRef(connectionId);
+     useEffect(() => { connectionIdRef.current = connectionId; }, [connectionId]);
 
-  // Signup form states
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    // --- WebSocket Connection Logic (Desktop) ---
+    const connectWebSocket = (retrievedConnectionId, currentUserId) => {
+        if (isMobile || !retrievedConnectionId || !currentUserId) {
+             console.log("[WebSocket] Skipping connection: Conditions not met (isMobile/no ID/no User).");
+             return;
+        }
+        // --- Close existing socket FIRST ---
+         if (socketRef.current && socketRef.current.readyState !== WebSocket.CLOSED && socketRef.current.readyState !== WebSocket.CLOSING) {
+             console.log("[WebSocket] Closing previous socket before reconnecting...");
+             socketRef.current.close();
+             socketRef.current = null;
+         }
+        // ---------------------------------
 
-  // OTP states
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpDigits, setOtpDigits] = useState(Array(6).fill(""));
-  const [otpMessage, setOtpMessage] = useState("");
-  const [timer, setTimer] = useState(60);
-  const [canResend, setCanResend] = useState(false);
+        console.log(`[WebSocket] Attempting to connect to ${WEBSOCKET_URL} for ID: ${retrievedConnectionId}`);
+        setConnectionStatus('waiting'); // Indicate attempting WS connection / waiting
+        setErrorMessage('');
 
-  // Timer effect for OTP countdown
-  useEffect(() => {
-    let intervalId;
-    if (otpSent && timer > 0) {
-      intervalId = setInterval(() => {
-        setTimer(prev => prev - 1);
-      }, 1000);
-    } else if (otpSent && timer === 0) {
-      setCanResend(true);
-    }
-    return () => clearInterval(intervalId);
-  }, [otpSent, timer]);
+        try {
+            const socket = new WebSocket(WEBSOCKET_URL);
+            socketRef.current = socket; // Store socket instance immediately
 
-  // Handle signup submission and OTP request
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+            socket.onopen = () => {
+                console.log('[WebSocket] CLIENT: Connection Opened.');
+                // Register this desktop client with its connection ID
+                if (currentUserId && retrievedConnectionId) {
+                    const registerMsg = {
+                        type: 'REGISTER_DESKTOP',
+                        connectionId: retrievedConnectionId,
+                        userId: currentUserId
+                    };
+                    console.log('[WebSocket] CLIENT: Sending registration:', registerMsg);
+                    socket.send(JSON.stringify(registerMsg));
+                    // Status remains 'waiting' until confirmed or mobile connects
+                } else {
+                    console.error("[WebSocket] CLIENT: Cannot register - Missing connectionId or userId onopen.");
+                    setErrorMessage("Internal error: Cannot register connection.");
+                    setConnectionStatus('ws_error');
+                    if (socketRef.current) socketRef.current.close(); // Check ref before closing
+                    socketRef.current = null;
+                }
+            };
 
-    // Validate password match
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+            socket.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('[WebSocket] CLIENT: Message from server:', message);
 
-    // Send OTP via mail service
-    const response = await mailService.sendOTP(email);
-    if (response.success) {
-      setOtpSent(true);
-      setTimer(60);
-      setCanResend(false);
-      setOtpMessage("✅ OTP sent to your email.");
-    } else {
-      setError(response.error || "Failed to send OTP.");
-    }
-  };
+                    // Handle MOBILE_CONNECTED message
+                    if (message.type === 'MOBILE_CONNECTED' && message.connectionId === connectionIdRef.current) { // Use Ref here
+                        console.log('[WebSocket] CLIENT: Mobile device connected! Updating status.');
+                        setConnectionStatus('connected');
+                        setErrorMessage('');
+                        if (socketRef.current) socketRef.current.close(); // Close socket once connection is made
+                        socketRef.current = null;
+                    }
+                    else if (message.type === 'REGISTER_SUCCESS') {
+                         console.log(`[WebSocket] CLIENT: Registration successful for ID: ${message.connectionId}`);
+                         setConnectionStatus('waiting'); // Confirm status is waiting
+                    }
+                     else if (message.type === 'REGISTER_FAIL') {
+                         console.error(`[WebSocket] CLIENT: Registration failed - ${message.reason}`);
+                         setErrorMessage(`Real-time connection failed: ${message.reason || 'Registration Rejected'}`);
+                         setConnectionStatus('ws_error');
+                         if (socketRef.current) socketRef.current.close();
+                         socketRef.current = null;
+                     }
+                    // Handle other message types...
 
-  // Handle OTP input change
-  const handleOtpChange = (value, index) => {
-    const cleanedValue = value.replace(/\D/g, "");
-    if (!cleanedValue) return;
-    const newOtpDigits = [...otpDigits];
-    newOtpDigits[index] = cleanedValue.slice(-1); // keep last digit
-    setOtpDigits(newOtpDigits);
-    
-    // Auto-focus next input if available
-    if (cleanedValue && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      if (nextInput) nextInput.focus();
-    }
-  };
+                } catch (e) {
+                    console.error('[WebSocket] CLIENT: Error parsing message:', e);
+                }
+            };
 
-  // Handle OTP verification
-  const handleOtpVerify = async () => {
-    const enteredOtp = otpDigits.join("");
-    const response = await mailService.verifyOTP(email, enteredOtp);
+            socket.onclose = (event) => {
+                console.log(`[WebSocket] CLIENT: Connection Closed. Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`);
+                 // Only set error if closed unexpectedly before being fully connected
+                // Use a function check to avoid stale state closure issues
+                setConnectionStatus(prevStatus => {
+                    // Check if the socket closing is the one we currently hold in ref
+                    // And avoid setting error if already connected or in another error state
+                    if (socketRef.current === socket && prevStatus !== 'connected' && !prevStatus.includes('error') && prevStatus !== 'initializing' ) {
+                         setErrorMessage('Real-time connection lost. Please regenerate ID.');
+                         return 'ws_closed';
+                    }
+                     return prevStatus; // Keep current status otherwise
+                 });
+                // Only nullify ref if the closed socket is the current one
+                 if(socketRef.current === socket) {
+                    socketRef.current = null;
+                 }
+            };
 
-    if (response.success) {
-      setOtpMessage("✅ OTP Verified Successfully!");
-      
-      // Register the user after OTP verification
+            socket.onerror = (errorEvent) => {
+                 const errorMsg = errorEvent.message || 'Could not connect to real-time service.';
+                 console.error('[WebSocket] CLIENT: Connection Error:', errorMsg, errorEvent);
+                 setErrorMessage('Real-time connection error. Check backend/console.');
+                 setConnectionStatus('ws_error');
+                 // Only nullify ref if the error belongs to the current socket
+                 if(socketRef.current === socket) {
+                    socketRef.current = null;
+                 }
+            };
+
+        } catch (error) {
+             console.error("Failed to create WebSocket:", error);
+             setErrorMessage('Could not establish real-time connection.');
+             setConnectionStatus('ws_error');
+        }
+    };
+
+
+    // --- Generate/Fetch Connection ID on Desktop ---
+    const fetchConnectionId = async () => {
+        if (isMobile) return;
+        if (!token) {
+            setErrorMessage("Please log in to generate a connection ID.");
+            setConnectionStatus('error');
+            setIsGeneratingId(false);
+            return;
+        }
+
+        // Close existing WebSocket before fetching new ID
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+             console.log("[WebSocket] Closing existing connection before regenerating ID.");
+             socketRef.current.close();
+             socketRef.current = null;
+        }
+
+        setIsGeneratingId(true);
+        setErrorMessage('');
+        setConnectionId(''); // Clear old ID immediately
+        setConnectionStatus('initializing');
+        console.log("Requesting new Connection ID from backend...");
+
+        try {
+            // --- API Call to Generate ID ---
+             // Adjust URL if necessary
+            const response = await fetch('http://localhost:5000/api/connect/generate-id', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+            });
+
+            if (!response.ok) {
+                let errorText = response.statusText;
+                 if (response.status === 401 || response.status === 403) { errorText = "Authentication failed."; }
+                 else { try { const errJson = await response.json(); errorText = errJson.message || errorText; } catch (_) {} }
+                throw new Error(`Failed to generate ID (${response.status}): ${errorText}`);
+            }
+
+            const data = await response.json();
+            if (!data.connectionId) { throw new Error("Backend did not return a Connection ID."); }
+
+            // Set state first
+            setConnectionId(data.connectionId);
+            console.log("Desktop received Connection ID:", data.connectionId);
+
+            // --- Connect WebSocket AFTER getting ID ---
+            if (user?.id) {
+                connectWebSocket(data.connectionId, user.id);
+            } else {
+                console.error("Cannot connect WebSocket: User ID not available from AuthContext.");
+                setErrorMessage("Login session error, cannot establish real-time link.");
+                setConnectionStatus('error');
+            }
+
+        } catch (err) {
+            console.error("Failed to fetch connection ID:", err);
+            setErrorMessage(err instanceof Error ? err.message : 'Could not get Connection ID.');
+            setConnectionStatus('error');
+        } finally {
+            setIsGeneratingId(false);
+        }
+    };
+
+    // Fetch ID on initial desktop mount if logged in
+    useEffect(() => {
+        if (!isMobile && token) {
+            fetchConnectionId();
+        } else if (!isMobile && !token) {
+            setErrorMessage("Please log in to connect a mobile device.");
+            setConnectionStatus('error');
+            setIsGeneratingId(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token, isMobile, user?.id]); // Re-run if user/token changes
+
+    // --- Cleanup WebSocket on component unmount ---
+    useEffect(() => {
+        return () => {
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                console.log('[WebSocket] Closing connection on component unmount.');
+                socketRef.current.close();
+                socketRef.current = null;
+            }
+        };
+    }, []); // Empty dependency array ensures this runs only once on unmount
+
+
+    // --- Handlers ---
+    const handleIdInputChange = (e) => {
+        setMobileEnteredId(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+    };
+
+    // Mobile connects (Calls Backend API to Validate ID)
+    const handleConnect = async (e) => {
+      if (e) e.preventDefault();
+      const enteredId = mobileEnteredId.trim();
+      if (!enteredId || isConnecting) {
+        setErrorMessage(!enteredId ? "Please enter or scan valid ID." : "");
+        return;
+      }
+      setIsConnecting(true);
+      setConnectionStatus("connecting");
+      setErrorMessage("");
+      setConnectedUserInfo(null);
+      console.log(`Mobile connecting with ID: ${enteredId}`);
+      let success = false;
       try {
-        const result = await registerUser(name, email, password, confirmPassword);
-        if (result.success) {
-          signup(result.user, result.token || 'dummyToken');
-          navigate('/');
+        // Adjust URL if needed
+        const response = await fetch(
+          "http://localhost:5000/api/connect/validate-id",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ connectionId: enteredId }),
+          }
+        );
+        if (!response.ok) {
+          let eText = response.statusText;
+          try {
+            const j = await response.json();
+            eText = j.message || eText;
+          } catch (_) {}
+          if (response.status === 400) {
+            throw new Error(eText || "Invalid/expired ID.");
+          } else {
+            throw new Error(`Connection failed: ${eText}`);
+          }
+        }
+        const result = await response.json();
+        success = result.success;
+        if (success) {
+          setConnectionStatus("connected");
+          setConnectedUserInfo(result.user);
+          console.log("Mobile Connected! User:", result.user);
         } else {
-          setOtpMessage(result.error || "Registration failed.");
+          throw new Error(result.message || "Validation failed.");
         }
       } catch (err) {
-        setOtpMessage(err.message);
+        console.error("Connection failed:", err);
+        setErrorMessage(
+          err instanceof Error ? err.message : "Connection failed."
+        );
+      } finally {
+        setIsConnecting(false);
+        if (!success) {
+          setConnectionStatus("error");
+        }
       }
-    } else {
-      setOtpMessage("❌ Incorrect OTP. Try Again.");
-    }
-  };
+    };
 
-  // Resend OTP handler
-  const handleResendOtp = async () => {
-    const response = await mailService.resendOTP(email);
-    if (response.success) {
-      setTimer(60);
-      setCanResend(false);
-      setOtpDigits(Array(6).fill(""));
-      setOtpMessage("✅ OTP resent successfully.");
-    } else {
-      setOtpMessage(response.error || "Failed to resend OTP.");
-    }
-  };
+    const handleCopyId = () => {
+        if (!connectionId) return;
+        navigator.clipboard.writeText(connectionId)
+            .then(() => alert(`Copied: ${connectionId}`))
+            .catch(err => { console.error('Failed to copy ID: ', err); alert('Copy failed.'); });
+    };
 
-  // Render OTP verification section if OTP has been sent
-  if (otpSent) {
-    return (
-      <div className="flex flex-col md:flex-row h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-        {/* Left Section */}
-        <div className="md:w-1/2 min-h-dvh flex flex-col items-center justify-evenly p-8 relative">
-          <img src={BannerImg} alt="Signup Banner" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="relative flex flex-col items-center z-10 text-center max-w-md">
-            <img src={Logo} alt="TextEvolve Logo" className="w-24 md:w-32" />
-            <h1 className="text-gray-600 text-2xl font-bold">TextEvolve</h1>
-            <p className="text-xl font-bold">OTP Verification</p>
-            <p className="text-gray-500">Enter the 6-digit code sent to your email</p>
-            <p className="text-orange-500">{email}</p>
-          </div>
-        </div>
+    // --- QR Code Scanner Effect (Mobile) ---
+    useEffect(() => {
+        let html5QrCode = null;
+        let scannerTimeoutId = null; // Debounce cleanup
 
-        {/* Right Section */}
-        <div className="relative md:w-1/2 flex flex-col justify-center p-8 bg-white dark:bg-gray-800">
-          <div className="max-w-md w-full mx-auto">
-            <div className="flex justify-center space-x-3 mb-6">
-              {otpDigits.map((digit, index) => (
-                <input
-                  key={index}
-                  id={`otp-${index}`}
-                  type="text"
-                  maxLength="1"
-                  value={digit}
-                  onChange={(e) => handleOtpChange(e.target.value, index)}
-                  className="w-14 h-14 border border-gray-300 rounded-lg text-center text-2xl font-medium focus:border-orange-500"
-                />
-              ))}
-            </div>
+        if (showScanner && isMobile) {
+            setScannerError('');
+            try {
+                const readerElement = document.getElementById(qrReaderId);
+                if (!readerElement) { console.error("QR DOM Element missing"); setScannerError("Scanner UI missing"); setShowScanner(false); return; }
+                html5QrCode = new Html5Qrcode(qrReaderId);
+                const qrSuccessCallback = (decodedText, result) => {
+                    console.log(`QR Scan: ${decodedText}`); const potentialId = decodedText.toUpperCase().trim();
+                    if (/^[A-Z0-9]{6}$/.test(potentialId)) { setMobileEnteredId(potentialId); setShowScanner(false); alert(`Scanned ID: ${potentialId}. Press 'Connect via ID'.`); }
+                    else { setScannerError("Invalid QR code scanned."); }
+                };
+                const qrErrorCallback = (errorMessage) => { if (!errorMessage.toLowerCase().includes("parse error")) { console.warn(`QR Error: ${errorMessage}`); } };
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, qrSuccessCallback, qrErrorCallback)
+                 .catch(err => { let eMsg = "Camera start failed."; if (err.name === "NotAllowedError") eMsg = "Camera permission denied."; else if (err.name === "NotFoundError") eMsg = "No camera found."; setScannerError(eMsg); setShowScanner(false); });
+            } catch (err) { console.error("QR Init Error:", err); setScannerError("QR Scanner failed."); setShowScanner(false); }
+        }
 
-            <button onClick={handleOtpVerify} className="w-full py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600">
-              Confirm OTP
-            </button>
+        // Cleanup
+        return () => {
+            if (html5QrCode && !scannerTimeoutId) {
+                scannerTimeoutId = setTimeout(() => {
+                    html5QrCode?.stop?.().then(() => console.log("QR Scanner stopped.")).catch(err => console.error("Error stopping scanner:", err));
+                 }, 50);
+            }
+        };
+    }, [showScanner, isMobile]);
 
-            <div className="text-center mt-4">
-              {timer > 0 ? (
-                <p>Resend OTP in {`00:${String(timer).padStart(2, "0")}`}</p>
-              ) : (
-                <button onClick={handleResendOtp} className="text-orange-600 hover:underline">
-                  Resend OTP
-                </button>
-              )}
-            </div>
 
-            <button onClick={() => setOtpSent(false)} className="mt-4 text-gray-500 hover:underline">
-              <IoArrowBack /> Back
-            </button>
+    // --- Animation Variants ---
+    const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.5 } } };
+    const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut'} } };
 
-            {otpMessage && <p className="mt-4 text-center text-gray-700">{otpMessage}</p>}
-          </div>
-        </div>
-      </div>
+
+    // --- Render Desktop View ---
+    const renderDesktopView = () => (
+        <motion.div key="desktop" variants={containerVariants} initial="hidden" animate="visible" exit="hidden" className="flex flex-col items-center text-center max-w-lg mx-auto" >
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Connect Your Mobile Device</h2>
+
+            {/* Show QR/ID etc only if NOT connected */}
+            {connectionStatus !== 'connected' && (
+                <>
+                    <p className="text-gray-600 mb-6"> Scan the QR code or enter the Connection ID on your mobile to upload documents.</p>
+                    {/* QR Code Display */}
+                    <motion.div variants={itemVariants} className="mb-3 bg-white p-4 rounded-lg shadow-md border min-w-[200px] min-h-[200px] flex items-center justify-center">
+                        {isGeneratingId || connectionStatus === 'initializing' ? ( <FiLoader className="w-8 h-8 text-orange-500 animate-spin"/> )
+                         : connectionId && connectionStatus !== 'error' && connectionStatus !== 'ws_error' && connectionStatus !== 'ws_closed' ? ( <QRCodeCanvas value={connectionId} size={192} /> )
+                         : ( <div className="text-center text-red-600 p-4"> <FiAlertCircle className="w-8 h-8 mx-auto mb-2"/> <p className="text-sm">{errorMessage || 'Could not generate ID.'}</p> <button onClick={fetchConnectionId} className="mt-3 text-xs text-orange-600 hover:underline" disabled={!token}>Retry</button> </div> )}
+                    </motion.div>
+                    {/* Connection ID Display */}
+                    <motion.div variants={itemVariants} className="mb-4">
+                        <p className="text-sm text-gray-500 mb-2">Or enter this ID on mobile:</p>
+                        <div className="flex items-center justify-center gap-3 bg-gray-100 border border-gray-300 px-6 py-3 rounded-lg min-w-[200px]">
+                            {isGeneratingId || connectionStatus === 'initializing' ? (<span className="text-2xl font-mono tracking-widest text-gray-400 italic">Loading...</span>)
+                             : connectionId && connectionStatus !== 'error' && connectionStatus !== 'ws_error' && connectionStatus !== 'ws_closed'? ( <> <span className="text-2xl font-mono tracking-widest text-gray-800">{connectionId}</span> <button onClick={handleCopyId} className="p-1 text-gray-500 hover:text-orange-600 transition-colors cursor-pointer" title="Copy ID"> <FiCopy className="w-5 h-5"/> </button> </> )
+                             : (<span className="text-sm text-red-500">- Failed -</span>)}
+                        </div>
+                    </motion.div>
+                    {/* Regenerate Button */}
+                     {(connectionStatus !== 'connected' && connectionStatus !== 'initializing') && ( <button onClick={fetchConnectionId} className="mb-4 text-xs text-gray-500 hover:text-orange-600 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled={isGeneratingId || !token}> <FiRefreshCw className="w-3 h-3"/> {isGeneratingId ? 'Generating...' : 'Regenerate ID / QR Code'} </button> )}
+                </>
+            )}
+
+            {/* Status Indicator - Always Visible */}
+            <motion.div variants={itemVariants} className="flex items-center justify-center text-gray-600 min-h-[24px] mt-4">
+                 {connectionStatus === 'initializing' && <><FiLoader className="w-5 h-5 mr-2 animate-spin text-orange-500" /><span>Initializing connection...</span></>}
+                 {connectionStatus === 'waiting' && <><FiLoader className="w-5 h-5 mr-2 animate-spin text-orange-500" /><span>Waiting for mobile connection...</span></>}
+                 {connectionStatus === 'connected' && <><FiCheckCircle className="w-5 h-5 mr-2 text-green-500" /><span className="text-green-600 font-semibold">Device Connected! Proceed on mobile.</span></>}
+                 {(connectionStatus === 'error' || connectionStatus === 'ws_error' || connectionStatus === 'ws_closed') && !isGeneratingId && <><FiAlertCircle className="w-5 h-5 mr-2 text-red-500" /><span className="text-red-600 font-semibold">{errorMessage || 'Connection Error'}</span></>}
+            </motion.div>
+            {(connectionStatus === 'ws_error' || connectionStatus === 'ws_closed') && <p className="text-xs text-gray-400 mt-4">(Real-time connection failed or closed)</p>}
+
+        </motion.div>
     );
-  }
 
-  return (
-    // Render Signup Form
-    <div className="flex flex-col md:flex-row h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-        {/* Left Section: Welcome + Image */}
-        <div className="md:w-1/2 min-h-dvh md:min-h-max flex flex-col items-center justify-evenly p-4 sm:p-8 relative">
-        <img src={BannerImg} alt="Signup Banner" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="relative flex flex-col items-center justify-between gap-4 z-10 text-center max-w-md">
-            <div className="flex flex-col items-center justify-center gap-1">
-            <img src={Logo} alt="TextEvolve Logo" className="w-24 md:w-32" />
-            <h1 className="text-gray-600 text-2xl font-bold">TextEvolve</h1>
-            </div>
-            <p className="text-3xl font-bold text-gray-700">
-            Digitize <span className="text-orange-500">History,</span> <br /> Empower the Future
-            </p>
-            <p className="mt-2 text-sm md:text-base text-gray-400">
-            Join us today and be part of transforming handwritten records into searchable digital formats.
-            </p>
-            <ScrollTo to="signup-section" smooth duration={500} className="md:hidden mt-6 text-white px-4 py-1.5 rounded-full bg-orange-500 cursor-pointer">
-            Get Started <IoArrowForward className="inline-block text-base ml-1 mb-0.5" />
-            </ScrollTo>
-        </div>
-        <div className="flex flex-col items-center justify-center z-50">
-            <p className="text-gray-500 text-xs">Sponsored by</p>
-            <div className="flex items-center gap-6 mt-2">
-            {creditsLogos.map((logo, index) => (
-                <a key={index} href={logo.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
-                <img src={logo.logo} alt={logo.name} className="w-10 h-10 md:w-12 md:h-12 cursor-pointer" />
-                </a>
-            ))}
-            </div>
-        </div>
-        </div>
+    // --- Render Mobile View ---
+    const renderMobileView = () => (
+        <motion.div key="mobile" variants={containerVariants} initial="hidden" animate="visible" exit="hidden" className="flex flex-col items-center text-center max-w-md mx-auto w-full px-4 py-10" >
+            {showScanner ? (
+                <motion.div /* Scanner UI */
+                    initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                    className="w-full p-4 bg-gray-100 rounded-lg shadow-md border border-gray-200"
+                >
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Scan QR Code</h3>
+                    <p className="text-sm text-gray-600 mb-4">Point camera at QR code on desktop.</p>
+                    <div id={qrReaderId} className="w-full max-w-[300px] aspect-square mx-auto border-4 border-orange-300 rounded-md overflow-hidden mb-4 bg-black"></div>
+                    {scannerError && ( <p className="text-red-600 text-sm my-2 flex items-center justify-center"> <FiAlertCircle className="w-4 h-4 mr-1"/> {scannerError} </p> )}
+                    <button onClick={() => setShowScanner(false)} className="btn-secondary text-sm py-2 px-4 mt-2" > <FiXCircle className="w-4 h-4 mr-1.5"/> Cancel Scan </button>
+                </motion.div>
+            ) : connectionStatus !== 'connected' ? (
+                <> {/* Connection Form View */}
+                    <div className="flex items-center justify-center gap-4 mb-6 text-orange-500"><FiType className="w-12 h-12 " /> <span className="text-gray-300 text-xl">OR</span> <FaQrcode className="w-12 h-12" /></div>
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">Connect to Desktop</h2>
+                    <p className="text-gray-600 mb-8 text-sm"> Method 1: Enter the 6-character ID from desktop.<br/> Method 2: Tap "Scan QR Code".</p>
+                    <form onSubmit={handleConnect} className="w-full flex flex-col items-center gap-4">
+                        <motion.input variants={itemVariants} type="text" value={mobileEnteredId} onChange={handleIdInputChange} placeholder="ABCXYZ" maxLength={6} required disabled={isConnecting} className="form-input w-full max-w-xs text-center text-2xl font-mono tracking-widest uppercase" autoCapitalize="characters" />
+                        {connectionStatus === 'error' && errorMessage && ( <motion.p variants={itemVariants} className="text-red-600 text-sm mt-1 flex items-center"><FiAlertCircle className="w-4 h-4 mr-1"/> {errorMessage}</motion.p> )}
+                        <motion.button variants={itemVariants} type="submit" disabled={isConnecting} className="btn-primary w-full max-w-xs flex items-center justify-center"> {isConnecting ? <FiLoader className="w-5 h-5 mr-2 animate-spin"/> : <FiSmartphone className="w-5 h-5 mr-2"/>} {isConnecting ? 'Connecting...' : 'Connect via ID'} </motion.button>
+                    </form>
+                    <div className="mt-6 text-center w-full max-w-xs">
+                        <p className="text-xs text-gray-400 mb-2">- OR -</p>
+                        <button type="button" disabled={isConnecting} className="btn-secondary w-full flex items-center justify-center" onClick={() => { setScannerError(''); setShowScanner(true); }} >
+                            <FaQrcode className="w-5 h-5 mr-2"/> Scan QR Code
+                        </button>
+                    </div>
+                </>
+            ) : (
+                <motion.div variants={itemVariants} className="text-center w-full"> {/* Connected State View - Updated */}
+                    <FiCheckCircle className="w-16 h-16 text-green-500 mb-4 mx-auto" />
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Connected!</h2>
+                     {/* Display User Info */}
+                     {connectedUserInfo ? (
+                         <div className='mb-4 text-sm text-gray-600'>
+                            <p>Connected to <span className="font-semibold">{connectedUserInfo.name || 'Desktop User'}</span></p>
+                            <p>({connectedUserInfo.email})</p>
+                        </div>
+                     ) : (
+                         <p className="text-sm text-gray-500 mb-4">(User details pending...)</p>
+                     )}
+                    <p className="text-gray-600 mb-8"> Ready to upload documents.</p>
+                    <div className="p-6 bg-gray-100 border border-gray-200 rounded-lg space-y-4">
+                        <h3 className="font-semibold text-gray-700">Upload Documents</h3>
+                        {/* --- TODO: Replace this placeholder --- */}
+                        <button className="btn-secondary inline-flex items-center mr-2"> <FiCamera className="w-4 h-4 mr-2"/> Take Photo </button>
+                        <button className="btn-secondary inline-flex items-center"> <FiUploadCloud className="w-4 h-4 mr-2"/> Upload File </button>
+                        {/* --- End Placeholder --- */}
+                    </div>
+                </motion.div>
+            )}
+        </motion.div>
+    );
 
-        {/* Right Section: Signup Form */}
-        <div id="signup-section" className="relative md:w-1/2 min-h-dvh md:min-h-max flex flex-col justify-center p-4 sm:p-8 md:p-12 bg-white dark:bg-gray-800">
-        <div className="max-w-md w-full mx-auto">
-            <img src={Logo} alt="TextEvolve Logo" className="w-24 md:w-32 mx-auto mb-6 md:hidden" />
-            <p className="w-9/10 mx-auto flex flex-col gap-1 text-center md:text-left text-gray-500 dark:text-gray-300 mb-8">
-            <span className="text-xl">Welcome! 👋🏼</span>
-            <span className="font-bold text-2xl">Create your account.</span>
-            </p>
-            {error && <div className="text-red-500 text-center mb-4">{error}</div>}
-            <form onSubmit={handleSubmit} className="space-y-5 w-9/10 mx-auto">
-            {/* Full Name Field */}
-            <div>
-                <label htmlFor="name" className="block text-sm font-medium">Full Name</label>
-                <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full px-4 py-2 rounded-md border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-            </div>
-            {/* Email Field */}
-            <div>
-                <label htmlFor="email" className="block text-sm font-medium">Email</label>
-                <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2 rounded-md border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-            </div>
-            {/* Password Field */}
-            <div className="relative">
-                <label htmlFor="password" className="block text-sm font-medium">Password</label>
-                <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 pr-10 rounded-md border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <div 
-                className="absolute inset-y-0 right-0 translate-y-1/7 pr-3 flex items-center cursor-pointer"
-                onClick={() => setShowPassword(!showPassword)}
-                >
-                {showPassword ? (
-                    <IoEyeOff className="text-gray-500 w-4 h-4 dark:text-gray-400" />
-                ) : (
-                    <IoEye className="text-gray-500 w-4 h-4 dark:text-gray-400" />
-                )}
-                </div>
-            </div>
-            {/* Confirm Password Field */}
-            <div className="relative">
-                <label htmlFor="confirmPassword" className="block text-sm font-medium">Confirm Password</label>
-                <input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'} 
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 pr-10 rounded-md border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <div 
-                className="absolute inset-y-0 right-0 translate-y-1/7 pr-3 flex items-center cursor-pointer"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                {showConfirmPassword ? (
-                    <IoEyeOff className="text-gray-500 w-4 h-4 dark:text-gray-400" />
-                ) : (
-                    <IoEye className="text-gray-500 w-4 h-4 dark:text-gray-400" />
-                )}
-                </div>
-            </div>
-            {/* Submit Button */}
-            <button
-                type="submit"
-                className="w-full py-2 px-4 rounded-md bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors cursor-pointer"
-            >
-                Sign Up
-            </button>
-            </form>
-            {/* Login Link */}
-            <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500">
-                Already have an account?{' '}
-                <Link
-                to="/login"
-                className="text-orange-500 font-medium hover:underline"
-                onClick={(e) => {
-                    e.preventDefault();
-                    navigate('/login');
-                }}
-                >
-                Log In
-                </Link>
-            </p>
-            </div>
+
+    // --- Main Return ---
+    return (
+        <div className="flex-1 h-full p-4 md:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <AnimatePresence mode="wait">
+                 {isMobile ? renderMobileView() : renderDesktopView()}
+            </AnimatePresence>
+             {/* Reminder: Ensure helper styles (.form-input, .btn-primary, .btn-secondary) are in global CSS */}
         </div>
-        <DesignedBy />
-        </div>
-    </div>
-  );
+    );
 }
 
-export default Signup;
+export default ConnectMobilePage;

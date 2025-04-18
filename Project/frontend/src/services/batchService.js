@@ -1,4 +1,5 @@
-// src/services/batchService.js - UPDATED
+// src/services/batchService.js 
+
 import apiClient from './apiConfig';
 
 const createBatch = async (name) => {

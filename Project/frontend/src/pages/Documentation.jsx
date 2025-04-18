@@ -246,7 +246,7 @@ function Documentation() {
             <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
               {t.additionalResources.text.split("official documentation")[0]}
               <a
-                href="https://docs.example.com"
+                href="https://squadofcreators.github.io/TextEvolve-home/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-orange-500 hover:underline transition-colors"

@@ -20,6 +20,8 @@ import ExtractTextPage from '../pages/ExtractTextPage';
 import ExtractionResultsPage from '../pages/ExtractionResultsPage';
 import SettingsPage from '../pages/SettingsPage';
 import CommunityPage from '../pages/CommunityPage';
+import QueryInterfacePage from '../pages/QueryInterfacePage';
+import ConnectMobilePage from '../pages/ConnectMobilePage';
 
 const protectedRoutes = [
   { path: '/', element: <LandingPage /> },
@@ -34,6 +36,8 @@ const protectedRoutes = [
   { path: '/batch/:batchId', element: <BatchDetails /> },
   { path: '/extract-text/:batchId', element: <ExtractTextPage /> },
   { path: '/extraction-results/:batchId', element: <ExtractionResultsPage /> },
+  { path: '/query-interface/:batchId', element: <QueryInterfacePage /> },
+  { path: '/connect-mobile', element: <ConnectMobilePage /> },
 ];
 
 function AppRoutes() {

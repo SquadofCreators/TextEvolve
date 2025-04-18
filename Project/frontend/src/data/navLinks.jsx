@@ -13,6 +13,7 @@ import { LuScanQrCode } from "react-icons/lu";
 import { TbPresentationAnalytics } from "react-icons/tb";
 import { IoFileTrayFullOutline } from "react-icons/io5";
 import { RiUserCommunityLine } from "react-icons/ri";
+import { BiSolidWebcam } from "react-icons/bi";
 
 import { FaRegFileLines } from "react-icons/fa6";
 
@@ -50,6 +51,13 @@ const navLinks = (handleLogout) => [
     showOnMobile: true,
     showOnDesktop: true,
     showOnTop: true, 
+  },{
+    name: "Webcam",
+    action: "/connect-mobile",
+    icon: <BiSolidWebcam className="w-5 h-5" />,
+    showOnMobile: true,
+    showOnDesktop: true,
+    showOnTop: true,
   },
   {
     name: "Community",
