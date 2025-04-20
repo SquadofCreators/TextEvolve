@@ -80,6 +80,8 @@ model Document {
   loss             Float?
   wordCount        Int?
   characterCount   Int?
+  enhancedText     String?
+  translatedText   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

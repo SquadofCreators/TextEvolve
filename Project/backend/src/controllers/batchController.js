@@ -129,6 +129,8 @@ export const getBatchById = async (req, res, next) => {
                          extractedContent: true, // Select individual text
                          wordCount: true, // Select new document fields
                          characterCount: true,
+                         enhancedText: true, // ADDED: Select new optional field
+                         translatedText: true, // ADDED: Select new optional field
                      },
                      orderBy: { createdAt: 'asc' }
                  }
@@ -424,7 +426,8 @@ export const deleteDocumentFromBatch = async (req, res, next) => {
 // @access  Private (or internal service)
 export const updateDocumentResults = async (req, res, next) => {
     const { batchId, docId } = req.params;
-    const { extractedContent, accuracy, precision, loss, status, wordCount, characterCount } = req.body;
+    // ADDED: enhancedText, translatedText to destructuring
+    const { extractedContent, accuracy, precision, loss, status, wordCount, characterCount, enhancedText, translatedText } = req.body;
     const userId = req.user?.id;
 
     // Input Validation
@@ -434,7 +437,7 @@ export const updateDocumentResults = async (req, res, next) => {
     }
 
     try {
-        // Authorization & Existence Check
+        // Authorization & Existence Check (no changes needed here)
         const document = await prisma.document.findUnique({
             where: { id: docId },
             select: {
@@ -457,12 +460,16 @@ export const updateDocumentResults = async (req, res, next) => {
         const dataToUpdate = {};
         if (extractedContent !== undefined) dataToUpdate.extractedContent = extractedContent;
         if (status !== undefined) dataToUpdate.status = status;
-        // Use the HELPER function (now defined above)
+        // Use the HELPER function
         if (accuracy !== undefined) dataToUpdate.accuracy = parseNumberOrNull(accuracy);
         if (precision !== undefined) dataToUpdate.precision = parseNumberOrNull(precision);
         if (loss !== undefined) dataToUpdate.loss = parseNumberOrNull(loss);
         if (wordCount !== undefined) dataToUpdate.wordCount = parseNumberOrNull(wordCount);
         if (characterCount !== undefined) dataToUpdate.characterCount = parseNumberOrNull(characterCount);
+        // ADDED: Handle new optional fields
+        if (enhancedText !== undefined) dataToUpdate.enhancedText = enhancedText; // Assign if provided (can be null or string)
+        if (translatedText !== undefined) dataToUpdate.translatedText = translatedText; // Assign if provided (can be null or string)
+
 
         if (Object.keys(dataToUpdate).length === 0) {
              return res.status(400).json({ message: "No valid fields provided for update." });
@@ -473,13 +480,15 @@ export const updateDocumentResults = async (req, res, next) => {
         const updatedDoc = await prisma.document.update({
             where: { id: docId },
             data: dataToUpdate,
-            select: {
+            select: { // Select relevant fields including new ones
                 id: true, status: true, accuracy: true, precision: true, loss: true,
                 wordCount: true, characterCount: true, updatedAt: true,
+                enhancedText: true, translatedText: true, // Ensure new fields are in response
             }
         });
 
         console.log(`Successfully updated results for document ${docId} in batch ${batchId}`);
+        // formatDocumentResponse already handles spreading properties, so it should include the new ones
         res.status(200).json(formatDocumentResponse(updatedDoc));
 
     } catch (error) {
