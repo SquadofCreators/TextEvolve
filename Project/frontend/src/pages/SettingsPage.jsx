@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiSettings, FiUsers, FiSave, FiAlertTriangle, FiTrash2, FiCheckCircle } from 'react-icons/fi';
 import PageHeader from '../components/utility/PageHeader';
+import { useTheme } from '../contexts/ThemeContext';
+import ThemeToggle from '../components/utility/ThemeToggle';
 
 function SettingsPage() {
+    const { theme, setTheme } = useTheme();
     const [activeTab, setActiveTab] = useState('account'); // 'account', 'preferences', 'community'
 
     const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -194,6 +197,9 @@ function SettingsPage() {
                                         <div className="flex items-center">
                                             <input type="checkbox" name="enablePolishing" id="enablePolishing" checked={preferences.enablePolishing} onChange={handlePrefsChange} className="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"/>
                                             <label htmlFor="enablePolishing" className="ml-2 block text-sm text-gray-900">Enable AI Text Polishing (Gemini) by Default</label>
+                                        </div>
+                                        <div>
+                                            <ThemeToggle className="mt-4" theme={theme} setTheme={setTheme}/>
                                         </div>
                                         <button type="submit" className="btn-primary" disabled={isSavingPrefs}>
                                             {isSavingPrefs ? 'Saving...' : <> <FiSave className="w-4 h-4 mr-2"/> Save Preferences </>}

@@ -4,9 +4,6 @@ import { FiSend, FiLoader, FiAlertCircle, FiMessageSquare, FiFileText } from 're
 import { useParams } from 'react-router-dom'; // Import useParams to get batchId from URL
 import { batchService } from '../services/batchService'; // Assuming batchService is correctly set up
 
-// Define the structure for conversation items (as plain objects)
-// type ConversationItem = { type: 'user' | 'ai' | 'error'; text: string; id: number; }; // (TypeScript type - removed)
-
 function QueryInterfacePage() {
     // --- State ---
     const [documentData, setDocumentData] = useState(null); // Initialize as null, will hold batch data

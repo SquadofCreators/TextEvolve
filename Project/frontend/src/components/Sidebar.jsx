@@ -9,6 +9,7 @@ import { navLinks } from '../data/navLinks';
 import TextEvolveLogo from '../assets/textevolve-logo.svg';
 
 export default function Sidebar() {
+  const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
   const [activeLink, setActiveLink] = useState('Dashboard');
   const [isMinimized, setIsMinimized] = useState(true);
