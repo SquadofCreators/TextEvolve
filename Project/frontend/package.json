@@ -13,6 +13,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@remixicon/react": "^4.6.0",
     "@tailwindcss/vite": "^4.0.12",
     "axios": "^1.8.4",
     "chart.js": "^4.4.8",
