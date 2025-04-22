@@ -40,7 +40,7 @@ export default function Sidebar() {
       className={`
         hidden md:flex relative flex-col h-screen p-4 border-r border-gray-300/30
         bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300
-        transition-all duration-300 ease-in-out
+        transition-all duration-300 ease-in-out select-none
         ${isMinimized ? 'md:w-20' : 'md:w-60'}
       `}
       onMouseEnter={() => setIsMinimized(false)}

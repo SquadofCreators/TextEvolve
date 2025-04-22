@@ -53,8 +53,8 @@ function ThemedChatMessage({ message }) {
 
 // --- Main App Chatbot Component ---
 function AppChatbot() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(() => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [messages, setMessages] = useState(() => {
       try {
           const storedHistory = sessionStorage.getItem(SESSION_STORAGE_KEY);
           if (storedHistory) {
@@ -69,31 +69,31 @@ function AppChatbot() {
           sessionStorage.removeItem(SESSION_STORAGE_KEY);
       }
       return [...initialMessages];
-  });
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null); // Changed to textareaRef for clarity
-  const chatContainerRef = useRef(null); // Ref for the scrollable messages area
-  const modalContentRef = useRef(null); // Ref for the modal content itself
+    });
+    const [inputValue, setInputValue] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const messagesEndRef = useRef(null);
+    const inputRef = useRef(null); // Changed to textareaRef for clarity
+    const chatContainerRef = useRef(null); // Ref for the scrollable messages area
+    const modalContentRef = useRef(null); // Ref for the modal content itself
 
   // --- Effects ---
 
-  // Save history
-  useEffect(() => {
-    try {
-        // Only save if there are more messages than initial ones, or if different
-        if (messages.length > initialMessages.length || JSON.stringify(messages) !== JSON.stringify(initialMessages)) {
-            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(messages));
-        } else {
-            // Optional: Clear storage if back to initial state (e.g., after refresh/clear)
-             sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    // Save history
+    useEffect(() => {
+        try {
+            // Only save if there are more messages than initial ones, or if different
+            if (messages.length > initialMessages.length || JSON.stringify(messages) !== JSON.stringify(initialMessages)) {
+                sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(messages));
+            } else {
+                // Optional: Clear storage if back to initial state (e.g., after refresh/clear)
+                sessionStorage.removeItem(SESSION_STORAGE_KEY);
+            }
+        } catch (e) {
+            console.error("Failed to save chat history:", e);
         }
-    } catch (e) {
-        console.error("Failed to save chat history:", e);
-    }
-  }, [messages]);
+    }, [messages]);
 
   // Scroll to bottom logic
   const scrollToBottom = useCallback((behavior = 'smooth') => {

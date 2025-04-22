@@ -14,14 +14,6 @@ import SupportPage from '../pages/SupportPage';
 import HistoryPage from '../pages/HistoryPage';
 import NotFound from '../pages/NotFound';
 import MainLayout from '../layouts/MainLayout';
-import DocumentationLayout, {
-    OverviewSection,
-    GettingStartedSection,
-    AdvancedFeaturesSection,
-    FaqSection,
-    ApiReferenceSection,
-    TroubleshootingSection
-} from '../pages/Documentation'; // Adjust import path if needed
 import BatchDetails from '../pages/BatchDetails';
 import ExtractTextPage from '../pages/ExtractTextPage';
 import ExtractionResultsPage from '../pages/ExtractionResultsPage';
@@ -30,6 +22,8 @@ import CommunityPage from '../pages/CommunityPage';
 import QueryInterfacePage from '../pages/QueryInterfacePage';
 import ConnectMobilePage from '../pages/ConnectMobilePage';
 import NotificationsPage from '../pages/NotificationsPage';
+import DocumentationPage from '../pages/DocumentationPage';
+
 
 const protectedRoutes = [
     { path: '/', element: <LandingPage /> },
@@ -58,15 +52,11 @@ function AppRoutes() {
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/documentation" element={<DocumentationLayout />}>
-                    <Route index element={<OverviewSection />} />
-                    <Route path="overview" element={<OverviewSection />} />
-                    <Route path="getting-started" element={<GettingStartedSection />} />
-                    <Route path="features" element={<AdvancedFeaturesSection />} />
-                    <Route path="faq" element={<FaqSection />} />
-                    <Route path="api" element={<ApiReferenceSection />} />
-                    <Route path="troubleshooting" element={<TroubleshootingSection />} />
-                </Route>
+
+                {/* Route for the single documentation page */}
+                <Route path="/documentation" element={<DocumentationPage />} />
+                {/* Optional: Handle sub-paths with hashes by still routing to the main page */}
+                <Route path="/documentation/*" element={<DocumentationPage />} />
 
                 {/* Protected Routes */}
                 <Route element={<ProtectedRoutes isLoggedIn={isLoggedIn} />}>
