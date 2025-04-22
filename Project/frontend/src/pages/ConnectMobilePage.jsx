@@ -17,11 +17,9 @@ import { batchService } from '../services/batchService'; // Import batchService
 // --- Configuration ---
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsHost = window.location.hostname; // Usually 'localhost' for dev
-const wsPort = import.meta.env.VITE_WEBSOCKET_PORT || // Use env variable if set
-               (window.location.hostname === 'localhost' ? '5000' : // Default to 5000 for local dev
-               (window.location.port || (wsProtocol === 'wss:' ? 443 : 80))); // Fallback to page port or standard ports
+const wsPort = import.meta.env.VITE_WEBSOCKET_PORT
 
-const WEBSOCKET_URL = `${wsProtocol}//${wsHost}:${wsPort}`;
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL;
 console.log("Attempting WebSocket connection to:", WEBSOCKET_URL); // Should now show correct port
 // --------------------------------------
 
