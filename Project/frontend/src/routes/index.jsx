@@ -3,6 +3,8 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import ProtectedRoutes from './ProtectedRoutes'; // Assuming this handles auth checks
 
+import UnderConstructionPage from '../pages/UnderConstructionPage';
+
 // Pages & Layouts
 import Login from '../pages/Login';
 import SignUp from '../pages/SignUp';
@@ -33,7 +35,7 @@ const protectedRoutes = [
     { path: '/history', element: <HistoryPage /> },
     { path: '/support', element: <SupportPage /> },
     { path: '/settings', element: <SettingsPage /> },
-    { path: '/community', element: <CommunityPage /> },
+    { path: '/community', element: <UnderConstructionPage featureName="Community" /> },
     { path: '/batch/:batchId', element: <BatchDetails /> },
     { path: '/extract-text/:batchId', element: <ExtractTextPage /> },
     { path: '/extraction-results/:batchId', element: <ExtractionResultsPage /> },

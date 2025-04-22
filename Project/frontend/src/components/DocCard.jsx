@@ -6,6 +6,7 @@ import { LuCalendarClock } from "react-icons/lu";
 import { GrStorage } from "react-icons/gr";
 import { MdFolderOpen, MdOutlineInfo } from "react-icons/md";
 import { FiEye, FiClipboard } from "react-icons/fi";
+import { FaHashtag } from "react-icons/fa";
 import MetaText from '../components/utility/MetaText'; // Keep assuming this component handles icon+text nicely
 
 // --- Default Formatters ---
@@ -74,6 +75,15 @@ function DocCard({
       }
   };
 
+  // Extract Text button handler
+  const handleExtractText = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (id !== 'N/A') {
+          navigate(`/extract-text/${id}`);
+      }
+  };
+
   return (
     <Link
       to={id !== 'N/A' ? `/batch/${id}` : '#'} // Prevent linking if ID is missing
@@ -83,62 +93,89 @@ function DocCard({
       <div className="p-5 flex-grow flex flex-col">
 
         {/* Top: Title and Status */}
-        <div className="mb-4">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 transition-colors line-clamp-2 mb-1.5" title={name}>
-            {name}
+        <div className="mb-2">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 transition-colors line-clamp-1 mb-1.5" title={name}>
+            {name} 
           </h3>
-           <span
-                title={`Status: ${statusInfo.text}`}
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ring-1 ring-inset ${statusInfo.bg} ${statusInfo.color} ${statusInfo.ring}`}
-            >
-                <MdOutlineInfo className="mr-1 -ml-0.5" /> {statusInfo.text}
-            </span>
         </div>
 
         {/* Metadata Section */}
         <div className="space-y-2 text-sm flex-grow mb-4"> {/* flex-grow pushes footer */}
+
+            {/* <MetaText
+              icon={<FaHashtag className="text-gray-400 dark:text-gray-500"/>}
+              title="Batch ID"
+              value={id}
+              textSize="sm"
+            /> */}
+            <MetaText
+              icon={<MdOutlineInfo className="text-gray-400 dark:text-gray-500"/>}
+              title="Status"
+              element={
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ring-1 ring-inset ${statusInfo.bg} ${statusInfo.color} ${statusInfo.ring}`}>
+                  {statusInfo.text}
+                </span>
+              }
+              textSize="sm"
+            />
             <MetaText
               icon={<MdFolderOpen className="text-gray-400 dark:text-gray-500"/>}
+              title="Files"
               value={`${totalFileCount} File${totalFileCount !== 1 ? 's' : ''}`}
-              textSize="xs"
+              textSize="sm"
             />
             <MetaText
               icon={<GrStorage className="text-gray-400 dark:text-gray-500"/>}
+              title="Total Size"
               value={formatBytes(totalFileSize)}
-              textSize="xs"
+              textSize="sm"
             />
             <MetaText
               icon={<LuCalendarClock className="text-gray-400 dark:text-gray-500"/>}
+              title="Last Updated"
               value={`Updated ${formatDate(updatedAt)}`}
-              textSize="xs"
+              textSize="sm"
             />
         </div>
 
         {/* Action Footer */}
         <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-end items-center gap-2">
-            {/* Preview Button */}
-            {onPreview && (
-                <button
-                    type="button"
-                    onClick={(e) => handleButtonClick(e, onPreview)}
-                    className="flex items-center justify-center gap-1 px-3 h-8 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 dark:focus:ring-offset-gray-800 transition-colors cursor-pointer"
-                    title="Preview documents"
-                >
-                    <FiEye size={14} /> Preview
-                </button>
-            )}
-
-            {/* View Results Button */}
-            {status === 'COMPLETED' && (
+          {/* Preview Button */}
+          {onPreview && (
               <button
-                type="button"
-                onClick={handleViewResultsClick}
-                className="flex items-center justify-center gap-1 px-3 h-8 text-xs font-medium text-white bg-teal-600 dark:bg-teal-600 rounded-md hover:bg-teal-700 dark:hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:focus:ring-offset-gray-800 transition-colors cursor-pointer"
-                title="View extraction results"
+                  type="button"
+                  onClick={(e) => handleButtonClick(e, onPreview)}
+                  className="flex items-center justify-center gap-1 px-3 h-8 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 dark:focus:ring-offset-gray-800 transition-colors cursor-pointer"
+                  title="Preview documents"
               >
-                <FiClipboard size={14} /> Results
+                  <FiEye size={14} /> Preview
               </button>
-            )}
+          )}
+
+          {/* View Results Button */}
+          {status === 'COMPLETED' && (
+            <button
+              type="button"
+              onClick={handleViewResultsClick}
+              className="flex items-center justify-center gap-1 px-3 h-8 text-xs font-medium text-white bg-teal-600 dark:bg-teal-600 rounded-md hover:bg-teal-700 dark:hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:focus:ring-offset-gray-800 transition-colors cursor-pointer"
+              title="View extraction results"
+            >
+              <FiClipboard size={14} /> Results
+            </button>
+          )}
+
+          {/* Extract Text Button (if not completed) */}
+          {status !== 'COMPLETED' && (
+            <button
+              type="button"
+              onClick={handleExtractText}
+              className="flex items-center justify-center gap-1 px-3 h-8 text-xs font-medium text-white bg-orange-600 dark:bg-orange-600 rounded-md hover:bg-orange-700 dark:hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 dark:focus:ring-offset-gray-800 transition-colors cursor-pointer"
+              title="Extract text from documents"
+            >
+              <FiClipboard size={14} /> Extract Text
+            </button>
+          )}
+          
         </div>
       </div>
     </Link>
