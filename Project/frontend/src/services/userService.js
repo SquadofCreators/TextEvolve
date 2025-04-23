@@ -131,6 +131,34 @@ const getUserProfilePreview = async (userId) => {
     }
 };
 
+/**
+ * Deletes the profile picture for the currently authenticated user.
+ * @returns {Promise<object>} Success message or updated user object.
+ */
+const deleteProfilePicture = async () => {
+    return apiClient.delete('/users/me/picture');
+};
+
+/**
+ * Updates the password for the currently authenticated user.
+ * @param {string} currentPassword - The user's current password.
+ * @param {string} newPassword - The desired new password.
+ * @param {string} confirmNewPassword - Confirmation of the new password.
+ * @returns {Promise<object>} Success message.
+ */
+const updatePassword = async (currentPassword, newPassword, confirmNewPassword) => {
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        throw new Error('Current password, new password, and confirmation are required.');
+    }
+    if (newPassword !== confirmNewPassword) {
+         throw new Error('New passwords do not match.');
+    }
+    return apiClient.put('/users/me/password', {
+        currentPassword,
+        newPassword,
+        confirmNewPassword // Send confirmation for backend validation (optional but good)
+    });
+};
 
 export const userService = {
     getMe,
@@ -138,4 +166,6 @@ export const userService = {
     updateProfilePicture,
     deleteMe,
     getUserProfilePreview,
+    deleteProfilePicture,
+    updatePassword,
 };

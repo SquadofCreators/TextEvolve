@@ -15,7 +15,7 @@ function ThemeToggle({ theme, setTheme }) {
         {/* Light Mode */}
         <button
           onClick={() => setTheme('light')}
-          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+          className={`p-1.5 text-gray-600 dark:text-gray-200 rounded-full transition-colors cursor-pointer ${
             theme === 'light' ? 'bg-gray-200 dark:bg-gray-600' : ''
           }`}
           title="Light Mode"
@@ -26,7 +26,7 @@ function ThemeToggle({ theme, setTheme }) {
         {/* System Mode */}
         <button
           onClick={() => setTheme('system')}
-          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+          className={`p-1.5 text-gray-600 dark:text-gray-200 rounded-full transition-colors cursor-pointer ${
             theme === 'system' ? 'bg-gray-200 dark:bg-gray-600' : ''
           }`}
           title="System / Auto"
@@ -37,7 +37,7 @@ function ThemeToggle({ theme, setTheme }) {
         {/* Dark Mode */}
         <button
           onClick={() => setTheme('dark')}
-          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+          className={`p-1.5 text-gray-600 dark:text-gray-200 rounded-full transition-colors cursor-pointer ${
             theme === 'dark' ? 'bg-gray-200 dark:bg-gray-600' : ''
           }`}
           title="Dark Mode"

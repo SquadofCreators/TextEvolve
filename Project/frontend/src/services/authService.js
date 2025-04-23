@@ -97,10 +97,46 @@ const getToken = () => {
     return localStorage.getItem(AUTH_TOKEN_KEY);
 };
 
+/**
+ * Sends a password reset OTP request for the given email.
+ * @param {string} email - The user's email address.
+ * @returns {Promise<object>} Success message (generic).
+ */
+const forgotPassword = async (email) => {
+    if (!email) throw new Error('Email is required.');
+    return apiClient.post('/auth/forgot-password', { email });
+};
+
+/**
+ * Resets the user's password using the OTP.
+ * @param {string} email - User's email.
+ * @param {string} otp - The OTP code received via email.
+ * @param {string} newPassword - The desired new password.
+ * @param {string} confirmPassword - Confirmation of the new password.
+ * @returns {Promise<object>} Success message.
+ */
+const resetPassword = async (email, otp, newPassword, confirmPassword) => {
+    if (!email || !otp || !newPassword || !confirmPassword) {
+        throw new Error('Email, OTP, new password, and confirmation are required.');
+    }
+    if (newPassword !== confirmPassword) {
+        throw new Error('New passwords do not match.');
+    }
+    return apiClient.post('/auth/reset-password', {
+       email,
+       otp,
+       newPassword,
+       confirmPassword // Send confirmation for backend validation
+    });
+};
+
+
 export const authService = {
     signup,
     verifyOtp,
     login,
     logout,
     getToken,
+    forgotPassword,
+    resetPassword,
 };
