@@ -1,6 +1,9 @@
 // src/routes/userRoutes.js
 import express from 'express';
-import { getMe, updateMe, updateProfilePicture, deleteMe, getUserProfilePreview } from '../controllers/userController.js';
+import {
+    getMe, updateMe, updateProfilePicture, deleteMe, getUserProfilePreview,
+    deleteProfilePicture, updatePassword,
+} from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { uploadProfilePic } from '../middleware/uploadMiddleware.js';
 
@@ -11,8 +14,12 @@ router.get('/:userId/profile', getUserProfilePreview);
 router.use(protect);
 
 router.get('/me', getMe);
-router.put('/me', updateMe); // Add input validation middleware later
-router.post('/me/picture', uploadProfilePic, updateProfilePicture); // Apply multer middleware BEFORE controller
+router.put('/me', updateMe);
 router.delete('/me', deleteMe);
+
+router.post('/me/picture', uploadProfilePic, updateProfilePicture); 
+router.delete('/me/picture', deleteProfilePicture);
+
+router.put('/me/password', updatePassword);
 
 export default router;

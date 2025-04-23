@@ -23,15 +23,15 @@ enum Status {
 model User {
   id                String    @id @default(auto()) @map("_id") @db.ObjectId
   email             String    @unique
-  password          String?
+  password          String?   // Hashed password
   name              String?
-  profilePictureUrl String?
+  profilePictureUrl String?   // Relative path
   bio               String?
   position          String?
   company           String?
   location          String?
-  otp               String?
-  otpExpires        DateTime?
+  otp               String?   // For signup AND password reset
+  otpExpires        DateTime? // For signup AND password reset
   isVerified        Boolean   @default(false)
   lastLoginAt       DateTime?
   lastLoginIp       String?

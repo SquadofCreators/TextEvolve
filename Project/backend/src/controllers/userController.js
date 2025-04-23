@@ -3,10 +3,13 @@ import prisma from '../config/db.js';
 import { deleteLocalFile } from '../middleware/uploadMiddleware.js';
 import { Prisma } from '@prisma/client';
 import path from 'path';
+import fs from 'fs'; 
+import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
 
-// Note: UPLOAD_BASE_DIR might not be needed directly in controller if only dealing with relative paths
-// const UPLOAD_BASE_DIR = process.env.UPLOAD_DIR || path.resolve('./uploads');
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const defaultUploadDirPath = path.resolve(__dirname, '..', '..', 'uploads');
 
 // @desc    Get current user's profile
 // @route   GET /api/users/me
@@ -252,5 +255,120 @@ export const getUserProfilePreview = async (req, res, next) => {
          }
          console.error(`Error fetching profile preview for user ${userId}:`, error);
         next(error); // Pass other errors to the generic handler
+    }
+};
+
+
+// Delete Profile Picture
+// @desc    Delete user's profile picture
+// @route   DELETE /api/users/me/picture
+// @access  Private
+export const deleteProfilePicture = async (req, res, next) => {
+    const userId = req.user.id;
+    console.log(`User Controller: Initiating profile picture deletion for user ${userId}`);
+
+    try {
+        // 1. Find user to get current picture path
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { profilePictureUrl: true }
+        });
+
+        // Handle cases where user or picture doesn't exist
+        if (!user) {
+            res.status(404); return next(new Error('User not found'));
+        }
+        if (!user.profilePictureUrl) {
+            // No picture to delete, return success or specific message
+            return res.status(200).json({ message: 'No profile picture to delete.' });
+        }
+
+        const relativePathToDelete = user.profilePictureUrl;
+
+        // 2. Delete the file from local storage
+        console.log(`User Controller: Deleting profile picture file: ${relativePathToDelete}`);
+        const deleted = await deleteLocalFile(relativePathToDelete); // Use await here
+        if (!deleted) {
+             // Log warning but proceed to clear DB field anyway? Or return error?
+             console.warn(`User Controller: Could not delete file ${relativePathToDelete} from storage (may already be gone).`);
+        }
+
+        // 3. Update user record in DB, setting profilePictureUrl to null
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { profilePictureUrl: null },
+             select: { // Return updated profile safely
+                id: true, email: true, name: true, profilePictureUrl: true,
+                bio: true, position: true, company: true, location: true,
+                lastLoginAt: true, createdAt: true, isVerified: true, updatedAt: true, lastLoginIp: true,
+             },
+        });
+
+        console.log(`User Controller: Profile picture database field cleared for user ${userId}`);
+        res.status(200).json({ message: 'Profile picture deleted successfully.', user: updatedUser });
+
+    } catch (error) {
+        console.error(`User Controller: Error deleting profile picture for user ${userId}:`, error);
+        next(error);
+    }
+};
+
+
+// Update Password
+// @desc    Update user's password (requires current password)
+// @route   PUT /api/users/me/password
+// @access  Private
+export const updatePassword = async (req, res, next) => {
+    const userId = req.user.id;
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    // 1. Validation
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        res.status(400);
+        return next(new Error('Please provide current password, new password, and confirmation.'));
+    }
+    if (newPassword.length < 6) {
+         res.status(400);
+         return next(new Error('New password must be at least 6 characters long.'));
+    }
+    if (newPassword !== confirmNewPassword) {
+        res.status(400);
+        return next(new Error('New password and confirmation do not match.'));
+    }
+
+    try {
+        // 2. Fetch user with current password hash
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { password: true } // Only select the password
+        });
+
+        if (!user || !user.password) {
+            // Should not happen for logged-in user, but good check
+            res.status(404); return next(new Error('User not found or password not set.'));
+        }
+
+        // 3. Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            res.status(401); // Unauthorized
+            return next(new Error('Incorrect current password.'));
+        }
+
+        // 4. Hash new password
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10); // Use salt rounds (e.g., 10)
+
+        // 5. Update password in database
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedNewPassword }
+        });
+
+        console.log(`User Controller: Password updated successfully for user ${userId}`);
+        res.status(200).json({ message: 'Password updated successfully.' });
+
+    } catch (error) {
+         console.error(`User Controller: Error updating password for user ${userId}:`, error);
+        next(error);
     }
 };
