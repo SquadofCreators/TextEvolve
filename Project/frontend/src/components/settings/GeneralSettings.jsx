@@ -3,159 +3,249 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext'; // Adjust path if needed
 import ThemeToggle from '../utility/ThemeToggle'; // Adjust path if needed
 import { FiGlobe, FiClock, FiType, FiSave, FiLoader, FiAlertTriangle, FiChevronDown } from 'react-icons/fi'; // Added icons
-import { MdInvertColors } from "react-icons/md";
+import { MdInvertColors } from "react-icons/md"; // Keep if used, or replace with Fi equivalent if preferred (e.g., FiSun/FiMoon handled by ThemeToggle)
 
-import { sectionVariants, selectStyles, buttonPrimaryStyles } from '../../utils/styleConstants'; // Adjust path
+// Assuming sectionVariants is defined elsewhere for animations
+// import { sectionVariants } from '../../utils/styleConstants'; // Adjust path
+// Example variant if not imported:
+const sectionVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.2, ease: "easeIn" } }
+};
 
-// Example Timezones (In reality, use a library like moment-timezone or Intl API for a full list)
+// Example Timezones (Keep example or replace with dynamic list generation)
 const commonTimezones = [
   { value: 'Asia/Kolkata', label: 'India Standard Time (IST, UTC+5:30)' },
   { value: 'Europe/London', label: 'London (GMT/BST, UTC+0/1)' },
   { value: 'America/New_York', label: 'New York (EST/EDT, UTC-5/4)' },
   { value: 'America/Los_Angeles', label: 'Los Angeles (PST/PDT, UTC-8/7)' },
   { value: 'UTC', label: 'Coordinated Universal Time (UTC)' },
+  // Consider adding more based on Intl.supportedValuesOf('timeZone') if browser support is sufficient
 ];
 
 // Supported UI Languages
 const supportedLanguages = [
     { code: 'en', name: 'English' },
     { code: 'ta', name: 'தமிழ் (Tamil)' },
-    // Add other languages UI supports
+    // Add other languages the UI actually supports
 ];
 
 function GeneralSettingsContent({ initialData, onSave, isSavingGeneral, showSaveStatus }) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme(); // Get theme context
+
+  // --- State for settings ---
   const [settings, setSettings] = useState({
+    // Default values, will be overridden by initialData
     appLanguage: 'en',
-    timezone: 'Asia/Kolkata',
-    fontSize: 'default', // 'small', 'default', 'large'
+    timezone: 'Asia/Kolkata', // Default to user's current location timezone if possible
+    fontSize: 'default',
     ...initialData // Merge initial data loaded by parent
   });
 
-  // Sync with prop changes
+  // Effect to synchronize state if initialData prop changes after mount
   useEffect(() => {
-    setSettings(prev => ({ ...prev, ...initialData }));
+    // Only update if initialData actually has values, prevent overwriting defaults unnecessarily
+    if (initialData && Object.keys(initialData).length > 0) {
+        setSettings(prev => ({ ...prev, ...initialData }));
+    }
   }, [initialData]);
 
+  // --- Handlers ---
+
+  // General change handler for select dropdowns
   const handleChange = (e) => {
     const { name, value } = e.target;
     setSettings(prev => ({ ...prev, [name]: value }));
+    // Optionally, trigger side effects immediately (like changing language)
+    // if (name === 'appLanguage') { /* i18n.changeLanguage(value); */ }
   };
 
   // Handler specifically for font size buttons
   const handleFontSizeChange = (size) => {
       setSettings(prev => ({ ...prev, fontSize: size }));
-      // TODO: Implement logic to actually change app font size
-      // This usually involves setting a class on the <html> or <body> element
-      // E.g., document.documentElement.classList.remove('text-sm', 'text-lg');
-      // if(size === 'small') document.documentElement.classList.add('text-sm');
-      // if(size === 'large') document.documentElement.classList.add('text-lg');
-      console.log("Font size preference set to:", size);
+      // Apply the font size change globally (example using class on root element)
+      try {
+          document.documentElement.classList.remove('text-sm', 'text-lg'); // Remove previous size classes
+          if(size === 'small') {
+              document.documentElement.classList.add('text-sm');
+          } else if (size === 'large') {
+              document.documentElement.classList.add('text-lg');
+          }
+          console.log("Applied font size class:", size);
+      } catch (error) {
+          console.error("Failed to apply font size class:", error);
+      }
   };
 
-
+  // Handle form submission to save settings
   const handleSave = (e) => {
-    e.preventDefault();
-    onSave(settings); // Call parent save handler
+    e.preventDefault(); // Prevent default form submission
+    if (onSave) {
+        onSave(settings); // Call the parent save handler passed via props
+    }
   };
 
-  // Helper for font size button style
-  const fontSizeButtonStyle = (size) => {
-      const base = "px-3 py-1 border rounded-md text-xs font-medium transition-colors duration-150";
-      const active = "bg-orange-500 border-orange-500 text-white shadow-sm";
-      const inactive = "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600";
-      return `${base} ${settings.fontSize === size ? active : inactive}`;
-  }
-
+  // --- Render Logic ---
   return (
-    <motion.section key="general" variants={sectionVariants} initial="hidden" animate="visible" exit="exit">
-      {/* Use form for semantics, even if save button is separate */}
-      <form onSubmit={handleSave} className="space-y-8 bg-white dark:bg-gray-800 p-6 md:p-8 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+    <motion.section
+        key="general"
+        variants={sectionVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        // Apply card styling to the motion section wrapper
+        className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-lg shadow border border-gray-200 dark:border-gray-700"
+    >
+      {/* Use form for semantic grouping */}
+      <form onSubmit={handleSave}>
+        {/* Container for setting rows with vertical dividers */}
+        <div className="divide-y divide-gray-200 dark:divide-gray-700 space-y-6 md:space-y-8">
 
-        {/* --- App Theme --- */}
-        <div className="flex items-center justify-between pb-4 border-b dark:border-gray-700">
-          <div>
-              <label className="flex items-center text-base font-medium text-gray-700 dark:text-gray-200">
-                <MdInvertColors className="w-4 h-4 mr-2 text-orange-500"/>
-                 Appearance Theme
+          {/* --- App Theme Setting Row --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-6 md:pt-8 first:pt-0">
+            {/* Left Column: Label & Description */}
+            <div className="md:col-span-2">
+              <label className="flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
+                <MdInvertColors className="w-5 h-5 mr-2 text-orange-500 flex-shrink-0"/>
+                Appearance
               </label>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Switch between light and dark mode.</p>
-          </div>
-          <ThemeToggle theme={theme} setTheme={setTheme} />
-        </div>
-
-        {/* --- App Language --- */}
-        <div className="flex items-center justify-between pb-4 border-b dark:border-gray-700">
-          <div className=''>
-            <label htmlFor="appLanguage" className="flex items-center text-base font-medium text-gray-700 dark:text-gray-200 mb-1">
-                <FiGlobe className="w-4 h-4 mr-2 text-orange-500"/> Application Language
-            </label>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Select the display language for the TextEvolve interface.</p>
-          </div>
-            <div className="relative max-w-xs">
-                <select
-                    id="appLanguage"
-                    name="appLanguage"
-                    value={settings.appLanguage}
-                    onChange={handleChange}
-                    className={selectStyles}
-                >
-                    {supportedLanguages.map(lang => (
-                        <option key={lang.code} value={lang.code}>{lang.name}</option>
-                    ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400"><FiChevronDown className="w-4 h-4" /></div>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Choose how the application looks. Changes apply instantly.
+              </p>
             </div>
-        </div>
-
-        {/* --- Timezone --- */}
-        <div className="flex items-center justify-between pb-4 border-b dark:border-gray-700s">
-          <div>
-            <label htmlFor="timezone" className="flex items-center text-base font-medium text-gray-700 dark:text-gray-200 mb-1">
-                <FiClock className="w-4 h-4 mr-2 text-orange-500"/> Timezone
-            </label>
-             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Affects how dates and times (like batch creation) are displayed.</p>
+            {/* Right Column: Control */}
+            <div className="md:col-span-1 flex items-center md:justify-end">
+              <ThemeToggle theme={theme} setTheme={setTheme} />
+            </div>
           </div>
-          <div className="relative max-w-xs">
-              <select
+
+          {/* --- App Language Setting Row --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-6 md:pt-8 first:pt-0">
+            {/* Left Column: Label & Description */}
+            <div className="md:col-span-2">
+              <label htmlFor="appLanguage" className="flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
+                <FiGlobe className="w-5 h-5 mr-2 text-orange-500 flex-shrink-0"/>
+                Language
+              </label>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Select the display language for the interface.
+              </p>
+            </div>
+            {/* Right Column: Control */}
+            <div className="md:col-span-1 flex items-center md:justify-end">
+              <div className="relative w-full max-w-xs">
+                <select
+                  id="appLanguage"
+                  name="appLanguage"
+                  value={settings.appLanguage}
+                  onChange={handleChange}
+                  // Integrated select styles using Tailwind
+                  className="block w-full appearance-none rounded-md border border-gray-300 dark:border-gray-600 shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-orange-500 focus:border-orange-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {supportedLanguages.map(lang => (
+                    <option key={lang.code} value={lang.code}>{lang.name}</option>
+                  ))}
+                </select>
+                {/* Chevron Icon */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 dark:text-gray-400">
+                  <FiChevronDown className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* --- Timezone Setting Row --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-6 md:pt-8 first:pt-0">
+            {/* Left Column: Label & Description */}
+            <div className="md:col-span-2">
+              <label htmlFor="timezone" className="flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
+                <FiClock className="w-5 h-5 mr-2 text-orange-500 flex-shrink-0"/>
+                Timezone
+              </label>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Affects how dates and times (e.g., batch creation time) are displayed.
+              </p>
+            </div>
+            {/* Right Column: Control */}
+            <div className="md:col-span-1 flex items-center md:justify-end">
+              <div className="relative w-full max-w-xs">
+                <select
                   id="timezone"
                   name="timezone"
                   value={settings.timezone}
                   onChange={handleChange}
-                  className={selectStyles}
-              >
-                {/* Add a default option */}
-                <option value="" disabled>Select your timezone</option>
+                  // Integrated select styles using Tailwind
+                  className="block w-full appearance-none rounded-md border border-gray-300 dark:border-gray-600 shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-orange-500 focus:border-orange-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {/* Add a default/placeholder if needed */}
+                  {/* <option value="" disabled>Select timezone</option> */}
                   {commonTimezones.map(tz => (
-                      <option key={tz.value} value={tz.value}>{tz.label}</option>
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
                   ))}
-                  {/* Consider adding more or using Intl.supportedValuesOf('timeZone') */}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400"><FiChevronDown className="w-4 h-4" /></div>
+                </select>
+                 {/* Chevron Icon */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 dark:text-gray-400">
+                  <FiChevronDown className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* --- Accessibility: Font Size --- */}
-        <div className="flex items-center justify-between pb-4 border-b dark:border-gray-700">
-          <div>
-            <label className="flex items-center text-base font-medium text-gray-700 dark:text-gray-200 mb-1">
-              <FiType className="w-4 h-4 mr-2 text-orange-500"/> Text Size
-            </label>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Adjust the application's base font size for readability.</p>
+          {/* --- Font Size Setting Row --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-6 md:pt-8 first:pt-0">
+            {/* Left Column: Label & Description */}
+            <div className="md:col-span-2">
+              <label className="flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
+                <FiType className="w-5 h-5 mr-2 text-orange-500 flex-shrink-0"/>
+                Text Size
+              </label>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Adjust the application's base font size for readability. Affects most text.
+              </p>
+            </div>
+            {/* Right Column: Control - Segmented Button Group */}
+            <div className="md:col-span-1 flex items-center md:justify-end">
+              <div className="inline-flex space-x-1 bg-gray-100 dark:bg-gray-900 p-1 rounded-lg" role="group">
+                {['small', 'default', 'large'].map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => handleFontSizeChange(size)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900 transition-colors duration-150 capitalize ${
+                      settings.fontSize === size
+                        ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow' // Active style
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200' // Inactive style
+                    }`}
+                    aria-pressed={settings.fontSize === size}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <button type="button" onClick={() => handleFontSizeChange('small')} className={fontSizeButtonStyle('small')}>Small</button>
-            <button type="button" onClick={() => handleFontSizeChange('default')} className={fontSizeButtonStyle('default')}>Default</button>
-            <button type="button" onClick={() => handleFontSizeChange('large')} className={fontSizeButtonStyle('large')}>Large</button>
-          </div>
-        </div>
 
-        {/* --- Save Button --- */}
-        <div className="pt-4">
-            <button type="submit" className={buttonPrimaryStyles} disabled={isSavingGeneral}>
-                {isSavingGeneral ? <><FiLoader className="w-4 h-4 mr-2 animate-spin"/> Saving...</> : <> <FiSave className="w-4 h-4 mr-2"/> Save General Settings </>}
-            </button>
-             {/* Status message will be shown by the parent's indicator */}
+        </div> {/* End of settings rows container */}
+
+        {/* --- Save Action Area --- */}
+        <div className="flex justify-end pt-8 mt-8 border-t border-gray-200 dark:border-gray-700">
+          <button
+            type="submit"
+            // Apply Tailwind classes directly for primary button style
+            className="inline-flex items-center justify-center px-5 py-2 border border-transparent text-sm font-semibold rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-150"
+            disabled={isSavingGeneral} // Disable button while saving
+          >
+            {isSavingGeneral ? (
+              <>
+                <FiLoader className="w-4 h-4 mr-2 animate-spin"/> Saving...
+              </>
+            ) : (
+              <>
+                <FiSave className="w-4 h-4 mr-2"/> Save General Settings
+              </>
+            )}
+          </button>
         </div>
 
       </form>
