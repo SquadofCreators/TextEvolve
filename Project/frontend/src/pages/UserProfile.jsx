@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useAuth } from "../../contexts/AuthContext"; // Adjust path
-import { userService } from "../../services/userService"; // Adjust path
+import { useAuth } from "../contexts/AuthContext"; 
+import { userService } from "../services/userService";
 import { Link, useNavigate } from "react-router-dom";
 import { BsFillPatchCheckFill } from "react-icons/bs";
 import {
@@ -20,8 +20,10 @@ import {
   FiLock, // Added FiLock
 } from "react-icons/fi";
 import { IoEye, IoEyeOff } from "react-icons/io5";
-import { formatDate, getFileUrl } from "../../utils/formatters"; // Adjust path
-import PageHeader from "../../components/utility/PageHeader"; // Adjust path
+import { formatDate } from "../utils/formatters"; 
+import { getFileUrl } from '../utils/urlUtils'
+import PageHeader from "../components/utility/PageHeader"; // Adjust path
+import { motion } from "framer-motion";
 
 const NotificationToggle = ({
   label,
@@ -86,6 +88,8 @@ function UserProfile() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [editing, setEditing] = useState(false); // Toggle for profile edit mode
+
+  const [profileData, setProfileData ] = useState();
 
   // Form data for PROFILE editing
   const [formData, setFormData] = useState({
@@ -727,7 +731,7 @@ function UserProfile() {
             </div>
 
             {/* Form Action Buttons */}
-            <div className="flex justify-end items-center space-x-3 pt-4 border-t dark:border-gray-600">
+            <div className="flex justify-end items-center space-x-3 pt-4">
               {updateError && (
                 <p className="text-xs text-red-600 flex-grow text-left flex items-center gap-1">
                   <FiAlertTriangle /> {updateError}
@@ -763,9 +767,9 @@ function UserProfile() {
         )}
 
         {/* --- Security/Password Section (Separate Card) --- */}
-        <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mt-8">
+        <div className="bg-white dark:bg-gray-800 mt-8">
           <form onSubmit={handleChangePasswordSubmit} className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-3 mb-5">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-600 pb-3 mb-5">
               Change Password
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
@@ -843,20 +847,23 @@ function UserProfile() {
                 <FiAlertTriangle /> {updateError}
               </p>
             )}
-            <button
-              type="submit"
-              className={buttonSecondaryStyles}
-              disabled={isSavingPassword}
-            >
-              {" "}
-              {isSavingPassword ? (
-                <>
-                  <FiLoader className="w-4 h-4 mr-2 animate-spin" /> Updating...
-                </>
-              ) : (
-                "Update Password"
-              )}{" "}
-            </button>
+            
+            <div className="w-full flex items-center justify-end">
+                <button
+                type="submit"
+                className={buttonSecondaryStyles}
+                disabled={isSavingPassword}
+                >
+                {" "}
+                {isSavingPassword ? (
+                    <>
+                    <FiLoader className="w-4 h-4 mr-2 animate-spin" /> Updating...
+                    </>
+                ) : (
+                    "Update Password"
+                )}{" "}
+                </button>
+            </div>
           </form>
         </div>
 
