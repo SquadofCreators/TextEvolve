@@ -225,21 +225,21 @@ function AccountSettingsContent({ user: contextUserFromParent, token, logout, up
 
     return (
         <>
-            <div className="space-y-8">
+            <div className="space-y-8 flex flex-col items-center">
                 {/* Section Header */}
-                <div className="pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="w-full pb-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Your Profile</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Update your name, photo, bio, and other account details.</p>
                 </div>
 
                 {/* Form Fields Area */}
-                <div className="space-y-6">
+                <div className="w-full max-w-3xl space-y-6">
                     {/* Profile Picture Section */}
-                    <div>
+                    <div className='flex flex-col items-center gap-3'>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Profile Picture</label>
                         {/* ... Picture display and upload/delete buttons ... */}
-                        <div className="flex items-center gap-4">
-                             {avatarSrc ? <img src={avatarSrc} crossOrigin='anonymous' alt="Avatar" className="w-16 h-16 object-cover rounded-full"/> : <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"><FiUser className="w-8 h-8 text-gray-400"/></div>}
+                        <div className="flex flex-col items-center gap-4">
+                             {avatarSrc ? <img src={avatarSrc} crossOrigin='anonymous' alt="Avatar" className="w-28 h-28 object-cover rounded-full ring-2 ring-orange-500 ring-offset-2"/> : <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"><FiUser className="w-8 h-8 text-gray-400"/></div>}
                              <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
                              <div className='flex flex-col sm:flex-row gap-2'>
                                  <button type="button" onClick={handlePictureButtonClick} disabled={isUploadingPic} className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 cursor-pointer"> <FiCamera className="inline -ml-1 mr-1.5 h-4 w-4"/> Change </button>
@@ -285,7 +285,6 @@ function AccountSettingsContent({ user: contextUserFromParent, token, logout, up
                         <p className="text-sm text-gray-500 dark:text-gray-400">Manage how you receive notifications.</p>
                         <div className="mt-2 space-y-0">
                             <NotificationToggle label="Email Notification" description="Receive important email updates." initialChecked={notifications.email} onChange={(checked) => handleNotificationToggle('email', checked)} />
-                            <NotificationToggle label="Sound Notification" description="Enable interface sounds." initialChecked={notifications.sound} onChange={(checked) => handleNotificationToggle('sound', checked)} />
                         </div>
                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Notification settings save requires backend implementation.</p>
                     </div>
@@ -315,17 +314,17 @@ function AccountSettingsContent({ user: contextUserFromParent, token, logout, up
                             </div>
 
                          {/* Delete Account Section */}
-                        <div className="mt-8 bg-red-100 p-4 rounded-xl border border-l-4 border-red-500 dark:border-red-700">
-                            <div className='flex flex-col md:flex-row items-center justify-between'>
+                        <div className="flex flex-col items-center md:items-start gap-2 mt-8 bg-red-100 p-4 rounded-xl border border-l-4 border-red-500 dark:border-red-700">
+                            <div className='w-full flex flex-col md:flex-row items-center justify-between'>
                                 <h4 className="text-md font-semibold text-red-600 dark:text-red-400 mb-2">
-                                Danger Zone
+                                    Danger Zone
                                 </h4>
                                 <button
-                                onClick={handleDeleteAccount}
-                                disabled={isUpdating || isUploadingPic}
-                                className="text-red-600 dark:text-red-400 hover:text-white dark:hover:text-red-300 border border-red-500 hover:bg-red-500 px-2 py-1 rounded-md text-sm disabled:opacity-50 inline-flex items-center gap-1 transition-all duration-300 cursor-pointer"
+                                    onClick={handleDeleteAccount}
+                                    disabled={isUpdating || isUploadingPic}
+                                    className="text-red-600 dark:text-red-400 hover:text-white dark:hover:text-red-300 border border-red-500 hover:bg-red-500 px-2 py-1 rounded-md text-sm disabled:opacity-50 inline-flex items-center gap-1 transition-all duration-300 cursor-pointer"
                                 >
-                                <FiTrash2 /> Delete My Account
+                                    <FiTrash2 /> Delete My Account
                                 </button>
                             </div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">

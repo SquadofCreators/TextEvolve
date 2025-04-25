@@ -93,7 +93,7 @@ function LandingPage() {
                 const sortedBatches = fetchedBatches.sort((a, b) =>
                     new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
                 );
-                setBatches(sortedBatches.slice(0, 8)); // Show up to 8 recent batches for grid layout
+                setBatches(sortedBatches.slice(0, 6)); // Show up to 8 recent batches for grid layout
                 setBatchesError(null);
             } catch (err) {
                 console.error("Error fetching batches:", err);
@@ -141,6 +141,23 @@ function LandingPage() {
     const handleViewResults = useCallback((batch) => {
         navigate(`/extraction-results/${batch.id}`);
     }, [navigate]);
+
+    // handle Delete Batch
+    const handleDeleteBatch = useCallback(async (batch) => {
+        if (!window.confirm(`Are you sure you want to delete the batch "${batch.name || batch.id}"?\nThis action cannot be undone.`)) return;
+
+        try{
+            setBatchesError(null);
+            setLoadingBatches(true)
+            await batchService.deleteBatch(batch.id);
+            setBatches(await batchService.getMyBatches());
+            setLoadingBatches(false)
+        } catch (error) {
+            console.error(`Error deleting batch ${batch.id}:`, error);
+            setBatchesError(`Failed to delete batch: ${error.message}`);
+        }
+
+    })
 
     // Modal controls (keep as is)
     const closeModal = () => setPreviewModalIndex(null);
@@ -199,8 +216,8 @@ function LandingPage() {
                                  key={batch.id}
                                  data={batch}
                                  onPreview={() => handlePreview(batch)}
-                                 // onExtractData prop is removed here
                                  onViewResults={() => handleViewResults(batch)}
+                                 onDeleteBatch={() => handleDeleteBatch(batch)}
                                  formatDate={formatDate}
                                  formatBytes={formatBytes}
                              />

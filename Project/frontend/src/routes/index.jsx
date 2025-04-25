@@ -25,6 +25,7 @@ import QueryInterfacePage from '../pages/QueryInterfacePage';
 import ConnectMobilePage from '../pages/ConnectMobilePage';
 import NotificationsPage from '../pages/NotificationsPage';
 import DocumentationPage from '../pages/DocumentationPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 
 
 const protectedRoutes = [
@@ -54,6 +55,7 @@ function AppRoutes() {
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
+                <Route path='/forgot-password' element={<ForgotPasswordPage />} />
 
                 {/* Route for the single documentation page */}
                 <Route path="/documentation" element={<DocumentationPage />} />

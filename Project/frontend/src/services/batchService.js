@@ -4,30 +4,30 @@ import apiClient from './apiConfig';
 
 const createBatch = async (name) => {
     const response = await apiClient.post('/batches', { name });
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 const getMyBatches = async () => {
     const response = await apiClient.get('/batches');
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 const getBatchById = async (batchId) => {
     if (!batchId) throw new Error('Batch ID is required');
     const response = await apiClient.get(`/batches/${batchId}`);
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 const updateBatch = async (batchId, batchData) => {
     if (!batchId) throw new Error('Batch ID is required');
     const response = await apiClient.put(`/batches/${batchId}`, batchData);
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 const deleteBatch = async (batchId) => {
     if (!batchId) throw new Error('Batch ID is required');
     const response = await apiClient.delete(`/batches/${batchId}`);
-    return response.data; // <-- Add .data (usually just a success message object)
+    return response.data;  
 };
 
 const uploadDocuments = async (batchId, files) => {
@@ -38,25 +38,25 @@ const uploadDocuments = async (batchId, files) => {
         formData.append('documents', files[i]);
     }
     const response = await apiClient.post(`/batches/${batchId}/documents`, formData);
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 const deleteDocument = async (batchId, docId) => {
     if (!batchId || !docId) throw new Error('Batch ID and Document ID are required');
     const response = await apiClient.delete(`/batches/${batchId}/documents/${docId}`);
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 const updateDocumentResults = async (batchId, docId, resultsData) => {
     if (!batchId || !docId) throw new Error('Batch ID and Document ID are required');
     const response = await apiClient.put(`/batches/${batchId}/documents/${docId}/results`, resultsData);
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 const aggregateBatchMetrics = async (batchId) => {
     if (!batchId) throw new Error('Batch ID is required');
     const response = await apiClient.put(`/batches/${batchId}/aggregate-metrics`);
-    return response.data; // <-- Add .data
+    return response.data; 
 };
 
 // This returns a URL path string, not an API response object, so it stays the same

@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiUser, FiCreditCard, FiFileText, FiMessageSquare, FiSliders,
     FiSearch, FiInfo, FiStar, FiLogOut, FiCheckCircle, FiAlertTriangle
-} from 'react-icons/fi'; // Combined necessary icons
+} from 'react-icons/fi'; 
+import { FaCrown } from "react-icons/fa";
 import { useAuth } from '../contexts/AuthContext'; // Adjust path if needed
 
 // Import the section components
 import AccountSettingsContent from '../components/settings/AccountSettings';
 import GeneralSettingsContent from '../components/settings/GeneralSettings';
-import ContactSettingsContent from '../components/settings/ContactSettings';
 import PaymentSettingsContent from '../components/settings/PaymentSettings';
 import SubscriptionSettingsContent from '../components/settings/SubscriptionSettings';
 // import CommunitySettingsContent from '../components/settings/CommunitySettings'; // Uncomment if using
@@ -38,8 +38,6 @@ function SettingsPage() {
     const settingTabs = [
         { key: 'general', label: 'General', icon: FiSliders, Component: GeneralSettingsContent },
         { key: 'account', label: 'Account', icon: FiUser, Component: AccountSettingsContent }, // Moved Account after General
-        { key: 'contact', label: 'Contact', icon: FiMessageSquare, Component: ContactSettingsContent },
-        { key: 'payment', label: 'Payment', icon: FiCreditCard, Component: PaymentSettingsContent },
         { key: 'subscription', label: 'Subscription', icon: FiFileText, Component: SubscriptionSettingsContent },
         // { key: 'apiKeys', label: 'API Keys', icon: FiKey, Component: ApiKeysSettingsContent }, // Example if needed
         // { key: 'community', label: 'Community Profile', icon: FiUsers, Component: CommunitySettingsContent },
@@ -53,7 +51,7 @@ function SettingsPage() {
             <div className="container mx-auto max-w-6xl"> {/* Increased max-width slightly */}
 
                 {/* Header Area */}
-                <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-3 gap-4">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
                         Settings
                     </h1>
@@ -67,24 +65,22 @@ function SettingsPage() {
                                className="pl-9 pr-3 py-2 w-full sm:w-48 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 text-gray-900 dark:text-gray-100"
                             />
                         </div>
-                         <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex-shrink-0" title="Tooltips display informative text when users hover over, focus on, or tap an element.">
-                            <FiInfo className="w-5 h-5"/>
-                        </button>
-                        <button className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition shadow-sm">
-                            <FiStar className="w-4 h-4"/> Go Pro
+                        
+                        <button className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-orange-600 text-white rounded-md text-sm font-medium hover:bg-orange-700 transition shadow-sm">
+                            <FaCrown className="w-4 h-4"/> Go Pro
                         </button>
                     </div>
                 </div>
 
                 {/* Horizontal Tab Navigation */}
-                <div className="border-b border-gray-200 dark:border-gray-700 mb-6 sm:mb-8">
+                <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
                     {/* Added overflow-x-auto for mobile scrolling */}
-                    <nav className="-mb-px flex space-x-5 sm:space-x-8 overflow-x-auto" aria-label="Tabs">
+                    <nav className="flex items-center gap-3 overflow-x-auto" aria-label="Tabs">
                         {settingTabs.map(tab => (
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
-                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-orange-500 ${
+                                className={`whitespace-nowrap py-1 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-orange-500 ${
                                     activeTab === tab.key
                                     ? 'border-orange-500 text-orange-600 dark:border-orange-400 dark:text-orange-400'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
@@ -92,8 +88,6 @@ function SettingsPage() {
                                 aria-current={activeTab === tab.key ? 'page' : undefined}
                             >
                                 {tab.label}
-                                {/* Example Count */}
-                                {tab.key === 'account' && <span className="ml-1.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold px-1.5 py-0.5 rounded-full hidden sm:inline-block">12</span>}
                             </button>
                         ))}
                     </nav>
@@ -145,7 +139,4 @@ function SettingsPage() {
 export default SettingsPage;
 
 
-// =====================================================================
-// Example Implementation for AccountSettingsContent (Needs to be in its own file)
-// =====================================================================
 
