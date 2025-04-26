@@ -72,7 +72,7 @@ function Navbar() {
   return (
     <header className="sticky top-0 w-full z-50 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 shadow transition-colors">
       {/* Top Bar (Desktop & Mobile) */}
-      <div className="max-w-7xl mx-auto px-6 py-4 md:py-3 flex items-center justify-between">
+      <div className="mx-auto px-6 py-4 md:py-3 flex items-center justify-between">
         {/* Logo (Mobile) */}
         <div className="md:hidden flex items-center space-x-2">
           <Link 
