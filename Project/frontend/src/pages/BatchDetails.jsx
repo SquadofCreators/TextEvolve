@@ -83,7 +83,7 @@ const BatchDetails = () => {
   const [previewModalDoc, setPreviewModalDoc] = useState(null);
   const [confirmDoc, setConfirmDoc] = useState(null);
   // --- New State for OCR Selection ---
-  const [selectedOcrProvider, setSelectedOcrProvider] = useState(ocrProviders[0]?.value || 'azure'); // Default to first provider or 'azure'
+  const [selectedOcrProvider, setSelectedOcrProvider] = useState('google');
 
   // --- Data Fetching ---
   const fetchBatch = useCallback(async () => {
