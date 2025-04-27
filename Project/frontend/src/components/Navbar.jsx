@@ -391,6 +391,7 @@ function Navbar() {
                 <img
                   src={getAvatarSrc()} // Uses the main avatar function
                   alt="avatar"
+                  crossOrigin='anonymous'
                   className="w-10 h-10 rounded-full border border-orange-500 object-cover group-hover:opacity-90 transition-opacity"
                 />
                 <div>
