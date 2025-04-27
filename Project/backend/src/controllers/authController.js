@@ -2,7 +2,6 @@
 import prisma from '../config/db.js';
 import { generateOtp, sendOtpEmail } from '../services/otpService.js';
 import { hashPassword, generateToken, comparePassword } from '../utils/authUtils.js';
-import { Prisma } from '@prisma/client'; 
 import bcrypt from 'bcrypt'; 
 
 

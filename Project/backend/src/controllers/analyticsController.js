@@ -1,5 +1,6 @@
-import prisma from '../config/db.js';
-import { Status } from '@prisma/client'; // Import Status enum if needed for filtering
+import prisma from '../config/db.js'; // Import Status enum if needed for filtering
+import pkg from '@prisma/client';
+const { Status } = pkg;
 
 // Helper function to calculate start date for trend periods
 const getStartDateForPeriod = (period = 'month') => {

@@ -372,3 +372,161 @@ export const updatePassword = async (req, res, next) => {
         next(error);
     }
 };
+
+const ATLAS_SEARCH_INDEX_NAME = 'user_profile_search';
+
+// @desc    Search users: name required, boost by the current user's company/location/position
+// @route   GET /api/users/search
+// @access  Private
+export const searchUsers = async (req, res, next) => {
+  const { name, page = 1, limit = 10 } = req.query;
+
+  // 1️⃣ Validate
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.status(400);
+    return next(new Error('The "name" query parameter is required.'));
+  }
+  const nameQuery = name.trim();
+
+  const pageInt  = parseInt(page, 10);
+  const limitInt = parseInt(limit, 10);
+  if (isNaN(pageInt) || pageInt < 1 || isNaN(limitInt) || limitInt < 1) {
+    res.status(400);
+    return next(new Error('Invalid pagination parameters.'));
+  }
+  const skip = (pageInt - 1) * limitInt;
+
+  try {
+    // 2️⃣ Pull *this* user's own company/location/position
+    const me = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        company:  true,
+        location: true,
+        position: true,
+      }
+    });
+
+    // If for some reason they have no profile yet, just fall back to empty strings
+    const companyQuery  = me?.company  || '';
+    const locationQuery = me?.location || '';
+    const positionQuery = me?.position || '';
+
+    // 3️⃣ Build search clauses
+
+    // MUST: name must start with the query (strict prefix via autocomplete)
+    const mustClauses = [{
+      autocomplete: {
+        query: nameQuery,
+        path: 'name'
+      }
+    }];
+
+    // SHOULD: ranking boosts: exact prefix > fuzzy > company > location > position
+    const shouldClauses = [
+      {
+        autocomplete: {
+          query: nameQuery,
+          path: 'name',
+          score: { boost: { value: 10 } }
+        }
+      },
+      {
+        autocomplete: {
+          query: nameQuery,
+          path: 'name',
+          fuzzy: { maxEdits: 1, prefixLength: 1 },
+          score: { boost: { value: 5 } }
+        }
+      }
+    ];
+
+    if (companyQuery) {
+      shouldClauses.push({
+        autocomplete: {
+          query: companyQuery,
+          path: 'company',
+          fuzzy: { maxEdits: 1, prefixLength: 1 },
+          score: { boost: { value: 3 } }
+        }
+      });
+    }
+    if (locationQuery) {
+      shouldClauses.push({
+        autocomplete: {
+          query: locationQuery,
+          path: 'location',
+          fuzzy: { maxEdits: 1, prefixLength: 1 },
+          score: { boost: { value: 2 } }
+        }
+      });
+    }
+    if (positionQuery) {
+      shouldClauses.push({
+        autocomplete: {
+          query: positionQuery,
+          path: 'position',
+          fuzzy: { maxEdits: 1, prefixLength: 1 },
+          score: { boost: { value: 1 } }
+        }
+      });
+    }
+
+    // 4️⃣ Build and run the aggregation
+    const pipeline = [
+      {
+        $search: {
+          index: ATLAS_SEARCH_INDEX_NAME,
+          compound: {
+            must:               mustClauses,
+            should:             shouldClauses,
+            minimumShouldMatch: 0
+          }
+        }
+      },
+      {
+        $project: {
+          _id:               0,
+          id:                { $toString: '$_id' },
+          name:              1,
+          profilePictureUrl: 1,
+          bio:               1,
+          position:          1,
+          company:           1,
+          location:          1,
+          createdAt:         1,
+          score:             { $meta: 'searchScore' }
+        }
+      },
+      { $sort:  { score: -1, name: 1 } },
+      { $skip:   skip },
+      { $limit:  limitInt }
+    ];
+
+    const countPipeline = [
+      {
+        $search: {
+          index: ATLAS_SEARCH_INDEX_NAME,
+          compound: { must: mustClauses }
+        }
+      },
+      { $count: 'totalUsers' }
+    ];
+
+    const [dataRes, countRes] = await Promise.all([
+      prisma.$runCommandRaw({ aggregate: 'users', pipeline,       cursor: {} }),
+      prisma.$runCommandRaw({ aggregate: 'users', pipeline: countPipeline, cursor: {} })
+    ]);
+
+    const users      = dataRes.cursor.firstBatch || [];
+    const totalUsers = countRes.cursor.firstBatch?.[0]?.totalUsers || 0;
+    const totalPages = Math.ceil(totalUsers / limitInt);
+
+    // 5️⃣ Send back paged, personalized results
+    res.status(200).json({ users, currentPage: pageInt, totalPages, totalUsers });
+
+  } catch (error) {
+    console.error('searchUsers error:', error);
+    next(error);
+  }
+};

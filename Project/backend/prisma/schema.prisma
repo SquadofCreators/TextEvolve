@@ -24,12 +24,12 @@ model User {
   id                String    @id @default(auto()) @map("_id") @db.ObjectId
   email             String    @unique
   password          String?   // Hashed password
-  name              String?
+  name              String    // Mandatory - GOOD!
   profilePictureUrl String?   // Relative path
   bio               String?
-  position          String?
-  company           String?
-  location          String?
+  position          String?   // Optional - GOOD!
+  company           String?   // Optional - GOOD!
+  location          String?   // Optional - GOOD!
   otp               String?   // For signup AND password reset
   otpExpires        DateTime? // For signup AND password reset
   isVerified        Boolean   @default(false)
@@ -42,8 +42,17 @@ model User {
 
   batches Batch[]
 
+  // --- ADD THESE INDEXES ---
+  @@index([name])
+  @@index([company])
+  @@index([location])
+  @@index([position])
+  // -------------------------
+
   @@map("users")
 }
+
+// --- Batch and Document models remain the same ---
 
 model Batch {
   id                  String  @id @default(auto()) @map("_id") @db.ObjectId

@@ -2,10 +2,12 @@
 
 import prisma from '../config/db.js';
 import { deleteLocalFile } from '../middleware/uploadMiddleware.js';
-import { Prisma, Status } from '@prisma/client'; 
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import pkg from '@prisma/client';
+const { Prisma, Status } = pkg;
+
 
 // Get __dirname equivalent in ES Modules
 const __filename = fileURLToPath(import.meta.url);

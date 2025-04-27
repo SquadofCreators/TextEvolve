@@ -2,7 +2,7 @@
 import express from 'express';
 import {
     getMe, updateMe, updateProfilePicture, deleteMe, getUserProfilePreview,
-    deleteProfilePicture, updatePassword,
+    deleteProfilePicture, updatePassword, searchUsers 
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { uploadProfilePic } from '../middleware/uploadMiddleware.js';
@@ -21,5 +21,6 @@ router.post('/me/picture', uploadProfilePic, updateProfilePicture);
 router.delete('/me/picture', deleteProfilePicture);
 
 router.put('/me/password', updatePassword);
+router.get('/search', searchUsers);
 
 export default router;
