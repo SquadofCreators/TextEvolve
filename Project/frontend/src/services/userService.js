@@ -160,6 +160,22 @@ const updatePassword = async (currentPassword, newPassword, confirmNewPassword) 
     });
 };
 
+/**
+ * Searches users based on name query.
+ * @param {string} query - Search term.
+ * @returns {Promise<object>} Search results including users, currentPage, totalPages, and totalUsers.
+ */
+const searchUsers = async (query) => {
+    if (!query) return { users: [], currentPage: 1, totalPages: 1, totalUsers: 0 };
+    try {
+      const response = await apiClient.get(`/users/search?name=${encodeURIComponent(query)}`);
+      return response.data; // { users, currentPage, totalPages, totalUsers }
+    } catch (error) {
+      console.error("Error searching users:", error.response?.data || error.message);
+      throw error.response?.data || error;
+    }
+  };
+
 export const userService = {
     getMe,
     updateMe,
@@ -168,4 +184,5 @@ export const userService = {
     getUserProfilePreview,
     deleteProfilePicture,
     updatePassword,
+    searchUsers
 };

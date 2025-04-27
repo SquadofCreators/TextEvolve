@@ -26,6 +26,7 @@ import ConnectMobilePage from '../pages/ConnectMobilePage';
 import NotificationsPage from '../pages/NotificationsPage';
 import DocumentationPage from '../pages/DocumentationPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import SearchPage from '../pages/SearchPage';
 
 
 const protectedRoutes = [
@@ -42,7 +43,8 @@ const protectedRoutes = [
     { path: '/extraction-results/:batchId', element: <ExtractionResultsPage /> },
     { path: '/query-interface/:batchId', element: <QueryInterfacePage /> },
     { path: '/connect-mobile', element: <ConnectMobilePage /> },
-    { path: '/notifications', element: <NotificationsPage /> }
+    { path: '/notifications', element: <NotificationsPage /> },
+    { path: '/search', element: <SearchPage /> }
 ];
 
 function AppRoutes() {
