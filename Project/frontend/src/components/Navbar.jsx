@@ -277,7 +277,7 @@ function Navbar() {
       <div className="mx-auto px-6 py-4 md:py-3 flex items-center justify-between">
         {/* Logo (mobile) */}
         <div className="md:hidden flex items-center">
-          <Link to="/" className="font-semibold text-xl tracking-widest">
+          <Link to="/" className="font-bold text-2xl">
             <span className="text-orange-500">Text</span>Evolve
           </Link>
         </div>
