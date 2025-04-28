@@ -160,21 +160,54 @@ const updatePassword = async (currentPassword, newPassword, confirmNewPassword) 
     });
 };
 
+const DEFAULT_SEARCH_LIMIT = 10; // Or import from constants
+
 /**
- * Searches users based on name query.
- * @param {string} query - Search term.
+ * Searches users based on name query with pagination.
+ * @param {string} query - Search term (name).
+ * @param {number} [page=1] - The page number to fetch.
+ * @param {number} [limit=DEFAULT_SEARCH_LIMIT] - The number of results per page.
+ * @param {object} [options={}] - Additional options like AbortController signal.
+ * @param {AbortSignal} [options.signal] - AbortSignal for the request.
  * @returns {Promise<object>} Search results including users, currentPage, totalPages, and totalUsers.
  */
-const searchUsers = async (query) => {
-    if (!query) return { users: [], currentPage: 1, totalPages: 1, totalUsers: 0 };
-    try {
-      const response = await apiClient.get(`/users/search?name=${encodeURIComponent(query)}`);
-      return response.data; // { users, currentPage, totalPages, totalUsers }
-    } catch (error) {
-      console.error("Error searching users:", error.response?.data || error.message);
-      throw error.response?.data || error;
+const searchUsers = async (query, page = 1, limit = DEFAULT_SEARCH_LIMIT, options = {}) => {
+    // Trim query here or ensure it's trimmed before calling
+    const trimmedQuery = query?.trim();
+
+    // Return empty state immediately if query is empty after trimming
+    if (!trimmedQuery) {
+        return { users: [], currentPage: 1, totalPages: 1, totalUsers: 0 };
     }
-  };
+
+    try {
+        // Use URLSearchParams for robust query string construction
+        const params = new URLSearchParams({
+            name: trimmedQuery,
+            page: String(page),     // Ensure page is sent as a string
+            limit: String(limit)    // Ensure limit is sent as a string
+        });
+
+        const url = `/users/search?${params.toString()}`;
+
+        // Pass the signal correctly in the Axios config object (second argument)
+        const response = await apiClient.get(url, { signal: options.signal });
+
+        // Return the data from the backend
+        return response.data; // Expected: { users, currentPage, totalPages, totalUsers }
+
+    } catch (error) {
+        // Handle AbortError gracefully
+        if (error.name === 'AbortError') {
+            console.log('User search request aborted.');
+            // Re-throw or return a specific marker if needed by the caller
+            throw error; // Re-throwing allows the caller's catch block to handle it
+        }
+        console.error("Error searching users:", error.response?.data || error.message);
+        // Throw a standardized error object
+        throw error.response?.data || new Error('Failed to search users');
+    }
+};
 
 export const userService = {
     getMe,
