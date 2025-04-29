@@ -530,3 +530,59 @@ export const searchUsers = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getAllUsers = async (req, res, next) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10; // Default limit: 10
+
+  if (page < 1 || limit < 1) {
+      res.status(400);
+      return next(new Error('Page and limit query parameters must be positive integers.'));
+  }
+
+  const skip = (page - 1) * limit;
+  const take = limit;
+
+  try {
+      // Fetch the requested page of users
+      const users = await prisma.user.findMany({
+          skip: skip,
+          take: take,
+          select: { // *** SELECT ONLY NECESSARY AND SAFE FIELDS ***
+              id: true,
+              name: true,
+              email: true, // Be mindful if email should be exposed here based on requirements
+              profilePictureUrl: true, // Relative path
+              position: true,
+              company: true,
+              location: true,
+              createdAt: true,
+              isVerified: true, // Example: Maybe you want to show verification status
+              lastLoginAt: true // Example: Maybe useful for admin overview
+              // ** Explicitly DO NOT select **
+              // password, otp, otpExpires, lastLoginIp etc.
+          },
+          orderBy: {
+              // Optional: Add default sorting, e.g., by name or creation date
+              createdAt: 'desc', // Show newest users first
+              // name: 'asc' // Or sort alphabetically by name
+          }
+      });
+
+      // Get the total count of users for pagination metadata
+      const totalUsers = await prisma.user.count();
+
+      const totalPages = Math.ceil(totalUsers / limit);
+
+      res.status(200).json({
+          users,
+          currentPage: page,
+          totalPages,
+          totalUsers
+      });
+
+  } catch (error) {
+      console.error('Error fetching all users:', error);
+      next(error);
+  }
+};

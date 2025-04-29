@@ -27,6 +27,7 @@ import NotificationsPage from '../pages/NotificationsPage';
 import DocumentationPage from '../pages/DocumentationPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import SearchPage from '../pages/SearchPage';
+import UserPublicProfile from '../pages/UserPublicProfile';
 
 
 const protectedRoutes = [
@@ -44,7 +45,8 @@ const protectedRoutes = [
     { path: '/query-interface/:batchId', element: <QueryInterfacePage /> },
     { path: '/connect-mobile', element: <ConnectMobilePage /> },
     { path: '/notifications', element: <NotificationsPage /> },
-    { path: '/search', element: <SearchPage /> }
+    { path: '/search', element: <SearchPage /> },
+    { path: '/user/:userId', element: <UserPublicProfile /> },
 ];
 
 function AppRoutes() {

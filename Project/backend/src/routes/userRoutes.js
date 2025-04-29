@@ -2,7 +2,7 @@
 import express from 'express';
 import {
     getMe, updateMe, updateProfilePicture, deleteMe, getUserProfilePreview,
-    deleteProfilePicture, updatePassword, searchUsers 
+    deleteProfilePicture, updatePassword, searchUsers, getAllUsers 
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { uploadProfilePic } from '../middleware/uploadMiddleware.js';
@@ -12,6 +12,8 @@ router.get('/:userId/profile', getUserProfilePreview);
 
 // All routes below are protected
 router.use(protect);
+
+router.get('/', getAllUsers);
 
 router.get('/me', getMe);
 router.put('/me', updateMe);
