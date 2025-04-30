@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import PropTypes from 'prop-types'; // Import PropTypes if used in Loader
 import { useAuth } from '../../contexts/AuthContext'; // Adjust path if needed
 import { userService } from '../../services/userService'; // Adjust path if needed
 import { useNavigate } from 'react-router-dom';
 import {
-    FiUser, FiCamera, FiSave, FiX, FiLoader, FiAlertTriangle,
-    FiTrash2, FiUploadCloud, FiCheck // Added FiUploadCloud, FiCheck
+    FiUser, FiCamera, FiSave, FiX, FiAlertTriangle, 
+    FiTrash2, FiUploadCloud, FiCheck
 } from 'react-icons/fi';
+import Loader from '../Loader'; // Using the modified Loader
 
 // --- Local Helper Function Definitions ---
 
@@ -98,6 +100,14 @@ const NotificationToggle = ({ label, description, initialChecked, onChange }) =>
     );
 };
 
+// Add PropTypes for NotificationToggle
+NotificationToggle.propTypes = {
+  label: PropTypes.string.isRequired,
+  description: PropTypes.string,
+  initialChecked: PropTypes.bool.isRequired,
+  onChange: PropTypes.func,
+};
+
 
 // --- Main Account Settings Component ---
 function AccountSettingsContent({ token, logout, updateUserContext, showSaveStatus }) {
@@ -152,7 +162,7 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
         } finally {
             setIsLoading(false);
         }
-    }, []); // No dependencies if userService handles token implicitly
+    }, [userService]); // Added userService dependency assuming it might change if context provides it
 
     // Fetch data on component mount
     useEffect(() => {
@@ -251,8 +261,9 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
             setProfilePicPreview(null);
         } catch (deleteError) {
             console.error("Picture deletion failed:", deleteError);
-            setPicUploadError(`Failed to delete picture: ${deleteError.message}`);
-            showSaveStatus(false, `Deletion failed: ${deleteError.message}`);
+            const errMsg = `Failed to delete picture: ${deleteError.message}`;
+            setPicUploadError(errMsg);
+            showSaveStatus(false, errMsg); // Also show error via global status
         } finally {
             setIsUploadingPic(false);
         }
@@ -270,7 +281,7 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                 position: formData.position || null,
                 company: formData.company || null,
                 location: formData.location || null,
-                // Include notification settings if saved here:
+                // Example if saving notifications here:
                 // notificationSettings: { email: notifications.email }
             };
 
@@ -281,8 +292,9 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
             showSaveStatus(true, 'Account settings saved successfully!');
 
         } catch(err) {
-            setError(err.message || "Failed to save settings.");
-            showSaveStatus(false, `Save failed: ${err.message}`);
+            const errMsg = err.message || "Failed to save settings.";
+            setError(errMsg); // Show error near save button
+            showSaveStatus(false, `Save failed: ${errMsg}`); // Show global error
             console.error("Account save error:", err);
         } finally {
             setIsUpdatingProfile(false);
@@ -293,6 +305,8 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
     const handleNotificationToggle = (key, value) => {
         setNotifications(prev => ({...prev, [key]: value}));
         // TODO: Implement actual saving logic for notifications
+        // This could involve a separate save button for this section or saving
+        // it alongside the main profile changes in handleSaveChanges.
         console.log("Notification toggled (Save needed):", key, value);
         showSaveStatus(false, "Notification preferences changed (Save not implemented).", 'prefs_unsaved', 5000);
     };
@@ -300,44 +314,48 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
     // Handle account deletion request
     const handleDeleteAccount = async () => {
         // Added a more explicit confirmation prompt
-        const confirmation = prompt('This action is permanent and cannot be undone. To confirm deletion, please type your email address below:');
+        const confirmation = prompt(`This action is permanent and cannot be undone. To confirm deletion, please type your email address (${profileData?.email}) below:`);
         if (confirmation !== profileData?.email) {
-             if (confirmation !== null) { // Check if prompt was cancelled
-                alert("Incorrect email address entered. Account deletion cancelled.");
+             if (confirmation !== null) { // Check if prompt was cancelled vs incorrect input
+                 alert("Incorrect email address entered. Account deletion cancelled.");
              }
             return;
         }
 
         // Second confirmation just to be absolutely sure
-        if (!window.confirm(`FINAL WARNING: Are you absolutely sure you want to delete the account associated with ${profileData?.email}?`)) {
+        if (!window.confirm(`FINAL WARNING: Are you absolutely sure you want to delete the account associated with ${profileData?.email}? This will remove all associated data.`)) {
             return;
         }
 
-        setIsUpdatingProfile(true); // Use general updating state
+        setIsUpdatingProfile(true); // Use general updating state (or create a dedicated one)
         setError(null);
         try {
             await userService.deleteMe(); // Call the backend service
-            showSaveStatus(true, 'Account deleted successfully. Logging out...');
+            showSaveStatus(true, 'Account deleted successfully. Logging you out...');
+            // Delay logout slightly to allow user to see the success message
             setTimeout(() => {
                 logout(); // Call logout function from context
-                navigate('/'); // Redirect after logout
+                navigate('/', { replace: true }); // Redirect after logout, replace history entry
             }, 2500);
         } catch (error) {
             console.error("Account deletion failed:", error);
-            setError(`Failed to delete account: ${error.message}`);
-            showSaveStatus(false, `Failed to delete account: ${error.message}`);
+            const errMsg = `Failed to delete account: ${error.message}`;
+            setError(errMsg); // Show error near delete button
+            showSaveStatus(false, errMsg); // Show global error
             setIsUpdatingProfile(false); // Only stop loading on error
         }
+        // Do not set setIsUpdatingProfile(false) on success, as the component will unmount after logout.
     };
 
 
     // --- Render Logic ---
 
-    // Loading State
+    // Loading State (Uses the new Loader within a centering div for full page load)
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center p-10 h-64">
-                <FiLoader className="animate-spin h-8 w-8 text-orange-500" />
+            <div className="flex justify-center items-center p-10 h-64" aria-live="polite" aria-busy="true">
+                {/* Use the new Loader, specify a larger size for the initial load */}
+                <Loader className="h-10 w-10" />
             </div>
         );
     }
@@ -345,12 +363,12 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
     // Error State (if initial data fetch failed)
     if (error && !profileData) {
         return (
-            <div className="p-6 border rounded-lg border-red-300 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 flex flex-col sm:flex-row items-center gap-4">
-                <FiAlertTriangle className="w-10 h-10 flex-shrink-0 text-red-500" />
+            <div className="p-6 border rounded-lg border-red-300 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 flex flex-col sm:flex-row items-center gap-4" role="alert">
+                <FiAlertTriangle className="w-10 h-10 flex-shrink-0 text-red-500" aria-hidden="true"/>
                 <div>
                     <h3 className="font-semibold text-lg">Failed to Load Account Settings</h3>
                     <p className="text-sm mt-1">{error}</p>
-                    <button onClick={fetchAccountData} className="mt-3 text-sm font-medium text-orange-700 dark:text-orange-500 hover:underline">
+                    <button onClick={fetchAccountData} className="mt-3 text-sm font-medium text-orange-700 dark:text-orange-500 hover:underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded">
                         Try Again
                     </button>
                 </div>
@@ -358,7 +376,7 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
         );
     }
 
-    // Fallback if data somehow still null (shouldn't normally happen)
+    // Fallback if data somehow still null (shouldn't normally happen after loading and error checks)
     if (!profileData) {
         return <p className="text-center text-gray-500 p-10">Could not load profile data.</p>;
     }
@@ -386,8 +404,8 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                     <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
 
                         {/* Profile Picture Column */}
-                        <div className="md:col-span-1 flex flex-col items-start">
-                             <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200 mb-3">
+                        <div className="md:col-span-1 flex flex-col items-center md:items-start"> {/* Center content on small screens */}
+                             <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200 mb-3 w-full text-center md:text-left"> {/* Label alignment */}
                                 Profile Picture
                              </label>
                              <div className="flex flex-col items-center gap-4 w-full">
@@ -398,19 +416,22 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                                          <img
                                              src={currentAvatarSrc}
                                              crossOrigin='anonymous' // Important for potential canvas operations if needed later
-                                             alt="Avatar"
+                                             alt="Current user avatar" // More descriptive alt text
                                              className="w-32 h-32 object-cover rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-orange-300 dark:ring-orange-700"
                                          />
                                      ) : (
                                          <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-gray-300 dark:ring-gray-600">
-                                             <FiUser className="w-16 h-16 text-gray-400 dark:text-gray-500" />
+                                             <FiUser className="w-16 h-16 text-gray-400 dark:text-gray-500" aria-hidden="true"/>
+                                             <span className="sr-only">Default avatar placeholder</span> {/* Screen reader text */}
                                          </div>
                                      )}
-                                     {/* Loading Indicator Overlay */}
+                                     {/* Loading Indicator Overlay (Uses the new Loader) */}
                                      {isUploadingPic && (
-                                        <div className="absolute inset-0 rounded-full bg-black/60 dark:bg-black/75 flex items-center justify-center backdrop-blur-sm">
-                                            <FiLoader className="animate-spin w-8 h-8 text-white" />
-                                        </div>
+                                         <div className="absolute inset-0 rounded-full bg-black/60 dark:bg-black/75 flex items-center justify-center backdrop-blur-sm" aria-live="polite" aria-busy="true">
+                                             {/* Customize loader for the overlay */}
+                                             <Loader className="h-8 w-8 text-white" />
+                                             <span className="sr-only">Uploading picture</span>
+                                         </div>
                                      )}
                                  </div>
 
@@ -421,9 +442,9 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                                          type="button"
                                          onClick={handlePictureButtonClick}
                                          disabled={isUploadingPic}
-                                         className="px-4 py-1.5 rounded-md bg-white dark:bg-gray-700 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+                                         className="px-4 py-1.5 rounded-md bg-white dark:bg-gray-700 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 flex items-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 focus:ring-orange-500"
                                      >
-                                         <FiCamera className="w-4 h-4" /> Change
+                                         <FiCamera className="w-4 h-4" aria-hidden="true"/> Change
                                      </button>
                                      {/* Remove Button (Conditional) */}
                                      {showRemoveButton && (
@@ -431,9 +452,10 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                                              type="button"
                                              onClick={handlePictureDelete}
                                              disabled={isUploadingPic}
-                                             className="px-4 py-1.5 rounded-md text-sm font-semibold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+                                             className="px-4 py-1.5 rounded-md text-sm font-semibold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 flex items-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 focus:ring-red-500"
+                                             aria-label="Remove current profile picture"
                                          >
-                                             <FiTrash2 className="w-4 h-4" /> Remove
+                                             <FiTrash2 className="w-4 h-4" aria-hidden="true"/> Remove
                                          </button>
                                      )}
                                      {/* Cancel Button (Conditional) */}
@@ -441,28 +463,30 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                                          <button
                                              type="button"
                                              onClick={cancelPictureUpload}
+                                             // Disable only if actively uploading *and* there's no error allowing retry/cancel
                                              disabled={isUploadingPic && !picUploadError}
-                                             className="px-4 py-1.5 rounded-md text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+                                             className="px-4 py-1.5 rounded-md text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50 flex items-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 focus:ring-gray-500"
+                                             aria-label="Cancel profile picture change"
                                          >
-                                              <FiX className="w-4 h-4"/> Cancel
+                                              <FiX className="w-4 h-4" aria-hidden="true"/> Cancel
                                          </button>
                                      )}
                                  </div>
 
                                  {/* Hidden Input */}
-                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/gif, image/webp" className="hidden" />
+                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/gif, image/webp" className="hidden" aria-hidden="true"/>
 
                                  {/* Error Message Area */}
                                  {picUploadError && (
-                                     <p className="text-xs text-red-600 dark:text-red-400 mt-2 text-center w-full max-w-xs"> {/* Limit width */}
-                                        <FiAlertTriangle className="inline w-3 h-3 mr-1 align-text-bottom" /> {picUploadError}
+                                     <p className="text-xs text-red-600 dark:text-red-400 mt-2 text-center w-full max-w-xs" role="alert"> {/* Limit width */}
+                                         <FiAlertTriangle className="inline w-3 h-3 mr-1 align-text-bottom" aria-hidden="true"/> {picUploadError}
                                      </p>
                                  )}
 
                                  {/* Helper Text (Show only if no error) */}
                                  {!picUploadError && (
                                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center w-full">
-                                        PNG, JPG, GIF, WEBP up to 5MB.
+                                         PNG, JPG, GIF, WEBP up to 5MB.
                                      </p>
                                  )}
                              </div>
@@ -481,58 +505,66 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                             <div>
                                 <label htmlFor="acc-email" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Email Address</label>
                                 <div className="mt-2">
-                                    <input id="acc-email" type="email" value={profileData?.email || ''} readOnly className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-500 dark:text-gray-400 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-inset focus:ring-gray-400 sm:text-sm sm:leading-6 bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed" />
+                                    <input id="acc-email" type="email" value={profileData?.email || ''} readOnly disabled className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-500 dark:text-gray-400 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-0 sm:text-sm sm:leading-6 bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed" aria-describedby="acc-email-desc"/>
+                                    <p id="acc-email-desc" className="sr-only">Email address cannot be changed here.</p>
                                 </div>
                             </div>
                             {/* Bio */}
                             <div>
                                 <label htmlFor="acc-bio" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Biography</label>
                                 <div className="mt-2">
-                                    <textarea id="acc-bio" name="bio" value={formData.bio} onChange={handleChange} rows={4} placeholder="Write a brief description about yourself." className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" />
-                                    <p className="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">Optional. Displayed on your public profile.</p>
+                                    <textarea id="acc-bio" name="bio" value={formData.bio} onChange={handleChange} rows={4} placeholder="Write a brief description about yourself." className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" aria-describedby="acc-bio-desc"/>
+                                    <p id="acc-bio-desc" className="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">Optional. Displayed on your public profile.</p>
                                 </div>
                             </div>
                             {/* Position/Company/Location (Optional) */}
                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-6">
-                                <div className="sm:col-span-1">
-                                    <label htmlFor="acc-position" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Position</label>
-                                    <div className="mt-2">
-                                        <input id="acc-position" type="text" name="position" value={formData.position} onChange={handleChange} placeholder="e.g., Developer" autoComplete='organization-title' className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" />
-                                    </div>
-                                </div>
-                                <div className="sm:col-span-1">
-                                    <label htmlFor="acc-company" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Company</label>
-                                    <div className="mt-2">
-                                        <input id="acc-company" type="text" name="company" value={formData.company} onChange={handleChange} placeholder="e.g., Tech Inc." autoComplete='organization' className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" />
-                                    </div>
-                                </div>
-                                <div className="sm:col-span-1">
-                                    <label htmlFor="acc-location" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Location</label>
-                                    <div className="mt-2">
-                                        <input id="acc-location" type="text" name="location" value={formData.location} onChange={handleChange} placeholder="e.g., City, Country" autoComplete='address-level2' className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" />
-                                    </div>
-                                </div>
+                                 <div className="sm:col-span-1">
+                                     <label htmlFor="acc-position" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Position</label>
+                                     <div className="mt-2">
+                                         <input id="acc-position" type="text" name="position" value={formData.position} onChange={handleChange} placeholder="e.g., Developer" autoComplete='organization-title' className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" />
+                                     </div>
+                                 </div>
+                                 <div className="sm:col-span-1">
+                                     <label htmlFor="acc-company" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Company</label>
+                                     <div className="mt-2">
+                                         <input id="acc-company" type="text" name="company" value={formData.company} onChange={handleChange} placeholder="e.g., Tech Inc." autoComplete='organization' className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" />
+                                     </div>
+                                 </div>
+                                 <div className="sm:col-span-1">
+                                     <label htmlFor="acc-location" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Location</label>
+                                     <div className="mt-2">
+                                         <input id="acc-location" type="text" name="location" value={formData.location} onChange={handleChange} placeholder="e.g., City, Country" autoComplete='address-level2' className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-orange-600 dark:bg-gray-700 sm:text-sm sm:leading-6" />
+                                     </div>
+                                 </div>
                              </div>
                         </div>
                     </div>
 
-                    {/* Save Button for Profile Section */}
-                     <div className="mt-8 flex items-center justify-end gap-x-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                        {/* Display general form errors */}
-                         {error && (
-                            <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1 mr-auto">
-                                <FiAlertTriangle size={16} /> {error}
+                    {/* Save Button for Profile Section (Uses the new Loader) */}
+                    <div className="mt-8 flex items-center justify-end gap-x-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                        {/* Display general form errors near the button */}
+                        {error && (
+                            <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1 mr-auto" role="alert">
+                                <FiAlertTriangle size={16} aria-hidden="true"/> {error}
                             </p>
-                         )}
+                        )}
                         {/* Save Button */}
                         <button
                             type="button"
                             onClick={handleSaveChanges}
                             disabled={isUpdatingProfile || isUploadingPic} // Disable if saving profile or uploading picture
-                            className="px-5 py-2 bg-orange-600 text-white rounded-md shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold flex items-center gap-1.5 transition-colors duration-150"
+                            className="px-5 py-2 bg-orange-600 text-white rounded-md shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors duration-150"
+                            style={{ minWidth: '130px' }} // Ensure minimum width to prevent size jump
+                            aria-live="polite" // Announce changes in content (Saving.../Save Changes)
                         >
-                            {isUpdatingProfile ? (<FiLoader className="animate-spin w-4 h-4" />) : (<FiSave className="w-4 h-4" />)}
-                            {isUpdatingProfile ? 'Saving...' : 'Save Changes'}
+                            {isUpdatingProfile ? (
+                                // Use new Loader, specify size and color for button
+                                <Loader className="h-4 w-4 text-white" />
+                            ) : (
+                                <FiSave className="w-4 h-4" aria-hidden="true"/>
+                            )}
+                            <span className="ml-1">{isUpdatingProfile ? 'Saving...' : 'Save Changes'}</span>
                         </button>
                     </div>
                 </section>
@@ -563,7 +595,7 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                     </div>
                     {/* Note about saving preferences */}
                     <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-                        Note: Saving notification preferences requires backend implementation. Changes made here may not be persisted.
+                        Note: Saving notification preferences may require clicking the main 'Save Changes' button or might need separate backend implementation.
                     </p>
                 </section>
 
@@ -571,31 +603,42 @@ function AccountSettingsContent({ token, logout, updateUserContext, showSaveStat
                 <section aria-labelledby="delete-account-heading">
                     {/* Section Header */}
                      <div className="pb-4 border-b border-red-300 dark:border-red-700">
-                        <h2 id="delete-account-heading" className="text-xl font-semibold leading-7 text-red-700 dark:text-red-400">Danger Zone</h2>
+                         <h2 id="delete-account-heading" className="text-xl font-semibold leading-7 text-red-700 dark:text-red-400">Danger Zone</h2>
                      </div>
                      {/* Danger Zone Content */}
                      <div className="mt-6 p-4 md:p-6 bg-red-50 dark:bg-transparent border border-red-300 dark:border-red-800/50 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div>
-                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Delete Account</h3>
-                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                Permanently remove your account and all associated data (batches, documents, etc.). This action is irreversible.
-                            </p>
-                        </div>
-                        {/* Delete Button */}
-                        <button
-                            type="button"
-                            onClick={handleDeleteAccount}
-                            disabled={isUpdatingProfile || isUploadingPic} // Disable during any update
-                            className="flex-shrink-0 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5 transition-colors duration-150"
-                        >
-                           <FiTrash2 className="w-4 h-4" /> Delete My Account
-                        </button>
-                    </div>
+                         <div>
+                             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Delete Account</h3>
+                             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400" id="delete-desc">
+                                 Permanently remove your account and all associated data (batches, documents, etc.). This action is irreversible.
+                             </p>
+                         </div>
+                         {/* Delete Button */}
+                         <button
+                             type="button"
+                             onClick={handleDeleteAccount}
+                             disabled={isUpdatingProfile || isUploadingPic} // Disable during any update/upload
+                             className="flex-shrink-0 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5 transition-colors duration-150"
+                             aria-describedby="delete-desc"
+                         >
+                            {/* Consider adding a loader here if deletion takes time */}
+                            <FiTrash2 className="w-4 h-4" aria-hidden="true"/> Delete My Account
+                         </button>
+                     </div>
                 </section>
 
             </div> {/* End main content spacing div */}
         </> // End React Fragment
     );
 }
+
+// Add PropTypes for AccountSettingsContent
+AccountSettingsContent.propTypes = {
+  token: PropTypes.string, // Optional, depending on userService implementation
+  logout: PropTypes.func.isRequired,
+  updateUserContext: PropTypes.func, // Optional, for updating global state
+  showSaveStatus: PropTypes.func.isRequired, // Function to show notifications
+};
+
 
 export default AccountSettingsContent;
