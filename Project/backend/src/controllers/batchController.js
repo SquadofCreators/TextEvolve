@@ -14,8 +14,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename); 
 const defaultUploadDirPath = path.resolve(__dirname, '..', '..', 'uploads');
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const BASE_API_URL = process.env.BASE_API_URL || 'http://localhost:5000';
 
-// Helper to convert BigInt fields for JSON response
 const formatBatchResponse = (batch) => {
     if (!batch) return null;
     const response = { ...batch };
@@ -29,17 +29,18 @@ const formatBatchResponse = (batch) => {
 };
 
 const formatDocumentResponse = (doc) => {
-     if (!doc) return null;
-     const response = { ...doc };
-     if (response.fileSize !== undefined && response.fileSize !== null) {
-         response.fileSize = response.fileSize.toString();
-     }
-      // Optionally construct full URL for documents if needed by frontend directly
-     // if (response.storageKey) {
-     //     const baseUrl = ... // Get base URL (might need req object passed in)
-     //     response.fileUrl = `${baseUrl}/uploads/${response.storageKey}`;
-     // }
-     return response;
+    if (!doc) return null;
+    const response = { ...doc };
+    if (response.fileSize !== undefined && response.fileSize !== null) {
+        response.fileSize = response.fileSize.toString();
+    }
+    // Construct full URL for storageKey if it exists
+    if (response.storageKey) {
+        // Prepend the BASE_API_URL and the /uploads/ path segment
+        response.storageKey = `${BASE_API_URL}/uploads/${response.storageKey}`;
+    }
+
+    return response;
 }
 
 // Helper function for safe number conversion
@@ -682,49 +683,61 @@ export const previewDocument = async (req, res, next) => {
 
 
 
-// --- UPDATED: Download Document ---
-// Added explicit CORS header here too, just in case, although download often works without it
 export const downloadDocument = async (req, res, next) => {
     const { batchId, docId } = req.params;
-    const userId = req.user.id;
-     try {
-        // 1. Find Document & Check Ownership (no changes needed here)
+    const userId = req.user.id; // Assuming protect middleware adds user to req
+
+    try {
         const document = await prisma.document.findUnique({
-             where: { id: docId }, select: { id: true, storageKey: true, fileName: true, batch: { select: { id: true, userId: true } } }
-         });
-        if (!document || document.batch.id !== batchId) { res.status(404); return next(new Error('Document not found in this batch.')); }
-        if (document.batch.userId !== userId) { res.status(403); return next(new Error('Not authorized to access this document.')); }
-        if (!document.storageKey) { res.status(404); return next(new Error('Storage path not found for this document.')); }
+            where: { id: docId },
+            select: {
+                id: true,
+                storageKey: true, // This is the relative path stored in DB
+                fileName: true,
+                batch: { select: { id: true, userId: true } }
+            }
+        });
 
-        // 2. Calculate Absolute Path (no changes needed here)
-        const baseUploadDir = process.env.UPLOAD_DIR || defaultUploadDirPath;
-        const absolutePath = path.join(baseUploadDir, document.storageKey);
-        console.log(`[Download - ${docId}] Attempting to send file from path:`, absolutePath);
-
-        // 3. Check File Existence (no changes needed here)
-         if (!fs.existsSync(absolutePath)) {
-             console.error(`Download Error: File not found at path: ${absolutePath}`);
-             res.status(404); return next(new Error('File not found on server.'));
+        if (!document) {
+            res.status(404); return next(new Error('Document not found.'));
+        }
+        if (document.batch.id !== batchId) {
+            res.status(400); return next(new Error('Document does not belong to the specified batch.'));
+        }
+        if (document.batch.userId !== userId) {
+            res.status(403); return next(new Error('Not authorized to access this document.'));
+        }
+        if (!document.storageKey) {
+            res.status(404); return next(new Error('Storage path not found for this document.'));
         }
 
-        // --- FIX: Explicitly Set CORS Header Before Sending File ---
-        // Although downloads often work without it due to browser handling, adding it is safer.
-        console.log(`[Download - ${docId}] Setting Access-Control-Allow-Origin to: ${frontendUrl}`);
-        res.setHeader('Access-Control-Allow-Origin', frontendUrl);
-        // ------------------------------------------------------------
+        const baseUploadDir = process.env.UPLOAD_DIR || defaultUploadDirPath; // Ensure defaultUploadDirPath is defined
+        const absolutePath = path.join(baseUploadDir, document.storageKey); // Uses relative DB storageKey
 
-        // 4. Send the file as an attachment
+        if (!fs.existsSync(absolutePath)) {
+            console.error(`Download Error: File not found at path: ${absolutePath}`);
+            res.status(404); return next(new Error('File not found on server.'));
+        }
+
+        // Set CORS header - frontendUrl should be defined (e.g., from process.env.FRONTEND_URL)
+        res.setHeader('Access-Control-Allow-Origin', frontendUrl);
+        
+        // res.download handles Content-Disposition and Content-Type
         const downloadFilename = document.fileName || `document_${docId}`;
         res.download(absolutePath, downloadFilename, (err) => {
             if (err) {
                 console.error(`Error during res.download for ${absolutePath}:`, err);
-                if (!res.headersSent) { next(err); }
+                if (!res.headersSent) {
+                    // If specific error handling is needed for common errors like network issues during streaming
+                    // err.code might give more info. For now, pass to generic error handler.
+                    next(err);
+                }
             } else {
-                 console.log(`Sent file for download: ${absolutePath} as ${downloadFilename}`);
+                console.log(`Sent file for download: ${absolutePath} as ${downloadFilename}`);
             }
         });
-
     } catch (error) {
+        console.error(`Generic error in downloadDocument for doc ${docId}:`, error);
         next(error);
     }
 };
