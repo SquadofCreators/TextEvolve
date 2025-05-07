@@ -108,20 +108,6 @@ function SingleDocCard({
           >
             <FiEye size={20} />
           </button>
-
-          {/* Download Link */}
-          <a
-            href={doc?.downloadUrl}
-            download={doc?.fileName || `document_${doc?.id}`} // Suggest original filename
-            target="_blank" // Opens in new tab, might trigger download directly or display content
-            rel="noopener noreferrer"
-            title="Download Document"
-            aria-label="Download Document"
-            // Add focus styles similar to buttons for consistency
-            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800"
-          >
-            <FiDownload size={20} />
-          </a>
         </div>
       </div>
 
