@@ -1,7 +1,7 @@
 // src/pages/ExtractTextPage.jsx
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom"; // Added useLocation
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   CheckCircle,
   Loader2,
@@ -9,23 +9,32 @@ import {
   XCircle,
   Eye,
   AlertTriangle,
-} from "lucide-react"; // Assuming these icons are used or install lucide-react
+} from "lucide-react";
 import PageHeader from "../components/utility/PageHeader";
 import { batchService } from "../services/batchService";
-// Import the CORRECT service object and functions
 import { textExtractService } from "../services/textExtractService";
-// Keep FiLoader/FiAlertTriangle if used in error display
 import { FiLoader, FiAlertTriangle } from "react-icons/fi";
 
 // --- Local Helper Definitions ---
 
-// Construct full file URL - Ensure this points to where your files are served from
-// Typically the main backend, not necessarily the AI backend.
+// This function is kept in case other parts of the system provide relative storageKeys.
+// However, for the primary logic in this component, if d.storageKey is already absolute,
+// this function should NOT be used on it for comparison with other absolute URLs.
 const getFileUrl = (storageKey) => {
     if (!storageKey || typeof storageKey !== "string") {
         return null;
     }
-    // Use specific image base URL from .env if defined, otherwise construct from main API URL
+
+    // If storageKey is ALREADY a full URL, return it directly to prevent double prefixing
+    try {
+        new URL(storageKey); // Check if it's a valid, absolute URL
+        // It might be a URL from a different origin than VITE_API_URL (e.g. cloud storage direct URL)
+        // For this function's purpose, if it's absolute, we assume it's the one to use.
+        return storageKey;
+    } catch (_) {
+        // Not a full URL, so proceed to construct it
+    }
+
     const apiOrigin = import.meta.env.VITE_API_URL
         ? new URL(import.meta.env.VITE_API_URL).origin
         : 'http://localhost:5000'; // Fallback main API origin
@@ -36,7 +45,6 @@ const getFileUrl = (storageKey) => {
         ? normalizedStorageKey.substring(1)
         : normalizedStorageKey;
 
-    // Prevent double slashes
     const fullUrl = `${uploadsBase.replace(/\/$/, '')}/${cleanStorageKey}`;
     return fullUrl;
 };
@@ -44,24 +52,25 @@ const getFileUrl = (storageKey) => {
 
 // --- Component Definition ---
 
-// Define steps (can still be used for visual representation)
 const steps = [
   { name: "Fetching Batch Info", key: "fetch" },
   { name: "Preparing Images", key: "prepare" },
   { name: "Extracting Text (AI)", key: "extract" },
   { name: "Saving Results", key: "save" },
   { name: "Completed", key: "complete" },
-  { name: "Failed", key: "fail" }, // Add a fail state
+  { name: "Failed", key: "fail" },
 ];
 
 const ExtractTextPage = () => {
   const { batchId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // Use location to get state passed from navigation
+  const location = useLocation();
 
-  // State definitions
   const [batchName, setBatchName] = useState("");
-  const [documents, setDocuments] = useState([]);
+  // documents state is set but not directly used for iteration logic for URLs,
+  // imageUrls from navState is the primary source for what to process.
+  // It's useful for mapping results back if IDs are needed.
+  // const [documents, setDocuments] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("Initializing...");
@@ -69,21 +78,18 @@ const ExtractTextPage = () => {
   const [error, setError] = useState(null);
   const [processedCount, setProcessedCount] = useState(0);
 
-  const processingStepsCount = steps.length - 2; // Exclude Complete/Fail from count
+  const processingStepsCount = steps.length - 2;
 
 
-  // --- Main Extraction Process ---
   const startExtraction = useCallback(async () => {
-    // --- Get data passed via navigation state ---
     const navState = location.state;
     if (!navState || !navState.ocrProvider || !navState.imageUrls || navState.imageUrls.length === 0) {
         setError("Extraction cannot start. Required information (OCR Provider, Image URLs) was not received.");
         setIsProcessing(false);
-        setCurrentStepIndex(steps.findIndex(s => s.key === 'fail')); // Go to fail state
+        setCurrentStepIndex(steps.findIndex(s => s.key === 'fail'));
         return;
     }
     const { ocrProvider, imageUrls, batchName: navBatchName } = navState;
-    // --- End Get data ---
 
     if (!batchId) {
         setError("No Batch ID found in URL.");
@@ -96,55 +102,61 @@ const ExtractTextPage = () => {
     setProgress(0);
     setCurrentStepIndex(0);
     setStatusMessage("Fetching batch information...");
-    setBatchName(navBatchName || `Batch ${batchId}`); // Use name from state if available
+    setBatchName(navBatchName || `Batch ${batchId}`);
 
-    let fetchedBatch; // Use this to cross-reference doc IDs if needed
-    let imageUrlsMap = new Map(); // To map results back to doc IDs
+    let fetchedBatch;
+    let imageUrlsMap = new Map();
 
     try {
-      // 1. Fetch Batch Data (Optional but good for validation/getting doc IDs)
-      // You might already have the necessary info (imageUrls) from navState,
-      // but fetching confirms the batch exists and helps map results to DB IDs.
       fetchedBatch = await batchService.getBatchById(batchId);
       if (!fetchedBatch || !fetchedBatch.documents) {
         throw new Error("Batch data could not be retrieved or is invalid.");
       }
-      setDocuments(fetchedBatch.documents); // Store original docs info
-      const totalDocs = imageUrls.length; // Use count from passed URLs
-      setProgress(Math.round((1 / (processingStepsCount + 1)) * 100));
-      setCurrentStepIndex(1); // Moving to "Preparing Images" (already done, step represents state)
+      // setDocuments(fetchedBatch.documents); // Storing documents if needed for other metadata
 
-      // 2. Prepare Image URLs Map (map URL back to document ID)
-      // Use the passed imageUrls, but map them to fetched document IDs
-      imageUrls.forEach(url => {
-          // Find the original document that corresponds to this URL
-          const doc = fetchedBatch.documents.find(d => getFileUrl(d.storageKey) === url);
+      const totalDocs = imageUrls.length;
+      setProgress(Math.round((1 / (processingStepsCount + 1)) * 100));
+      setCurrentStepIndex(1);
+
+      // --- Step 2: Prepare Image URLs Map (map URL back to document ID) ---
+      // CRITICAL ASSUMPTION: Both `url` from `navState.imageUrls` AND `d.storageKey`
+      // from `WorkspaceedBatch.documents` are expected to be FULL, ABSOLUTE URLs
+      // that are directly comparable for the same resource.
+      imageUrls.forEach(urlFromNav => {
+          const doc = fetchedBatch.documents.find(d => {
+              // If d.storageKey itself might be relative or need construction, use getFileUrl:
+              // const dbDocUrl = getFileUrl(d.storageKey);
+              // return dbDocUrl === urlFromNav;
+
+              // If d.storageKey is ALREADY an absolute URL, compare directly:
+              return d.storageKey === urlFromNav;
+          });
+
           if (doc) {
-              imageUrlsMap.set(url, doc.id);
+              imageUrlsMap.set(urlFromNav, doc.id);
           } else {
-              console.warn(`Could not map URL back to a document ID: ${url}`);
-              // Decide how to handle this - maybe map URL to itself?
-              imageUrlsMap.set(url, url); // Fallback: use URL as key if no doc ID found
+              console.warn(`Could not map URL from navigation state back to a fetched document ID: ${urlFromNav}. Document storageKey might differ or not be an exact match.`);
+              // Fallback: use URL as key if no doc ID found. This means results for this URL
+              // might not be saved against a specific document ID in your DB later.
+              imageUrlsMap.set(urlFromNav, urlFromNav);
           }
       });
+      // --- End Step 2 Correction ---
 
-      // Update Batch Status to PROCESSING
       try {
         await batchService.updateBatch(batchId, { status: "PROCESSING" });
       } catch (updateError) {
         console.warn("Could not update batch status to PROCESSING:", updateError);
-        // Proceed anyway, but log the warning
       }
 
       setProgress(Math.round((2 / (processingStepsCount + 1)) * 100));
-      setCurrentStepIndex(2); // Moving to "Extracting Text"
+      setCurrentStepIndex(2);
       setStatusMessage(`Sending ${totalDocs} image(s) to ${ocrProvider === 'google' ? 'Google' : 'Azure'} AI...`);
 
-
-      // 3. Call Correct External OCR Service based on ocrProvider
       let ocrResults;
       const isSingleImage = imageUrls.length === 1;
 
+      // The `imageUrls` (array of full URLs from navState) are passed directly to the service. This is correct.
       if (ocrProvider === 'google') {
           if (isSingleImage) {
               ocrResults = await textExtractService.googleOcrSingleImage(imageUrls[0]);
@@ -161,92 +173,92 @@ const ExtractTextPage = () => {
           throw new Error(`Unsupported OCR provider specified: ${ocrProvider}`);
       }
 
-      // Check if ocrResults is valid
-       if (!ocrResults || typeof ocrResults !== 'object') {
-           throw new Error("Received invalid or empty response from the OCR service.");
+       if (!ocrResults || typeof ocrResults !== 'object' || Object.keys(ocrResults).length === 0) {
+           // Check if it's an error structure from the service for a single image failure
+           if (isSingleImage && ocrResults && typeof ocrResults.error === 'string') {
+               // This is a valid error response for a single image, handle it as such
+               // Reconstruct it to match the multi-image result structure for consistent processing
+               ocrResults = { [imageUrls[0]]: ocrResults };
+           } else {
+               throw new Error("Received invalid, empty, or unexpectedly structured response from the OCR service.");
+           }
        }
 
-
-      // 4. Process Results and Update Documents
-      setCurrentStepIndex(3); // Moving to "Saving Results"
+      setCurrentStepIndex(3);
       let localProcessedCount = 0;
       let anyUpdateFailed = false;
-      const resultEntries = Object.entries(ocrResults);
+      const resultEntries = Object.entries(ocrResults); // Keys of ocrResults should be the full image URLs sent
 
-      // Ensure totalDocs reflects the number of results received if it differs
       const totalResultsToProcess = resultEntries.length;
-      if (totalResultsToProcess !== totalDocs) {
-          console.warn(`Number of results (${totalResultsToProcess}) differs from number of URLs sent (${totalDocs}).`);
+      if (totalResultsToProcess === 0 && imageUrls.length > 0) {
+        // This case implies the OCR service might have failed entirely before returning structured results
+        throw new Error("OCR service returned no results for the provided images.");
+      }
+      if (totalResultsToProcess !== totalDocs && Object.keys(ocrResults).length > 0) { // only warn if we have some results
+          console.warn(`Number of results (${totalResultsToProcess}) differs from number of URLs sent (${totalDocs}). Processing received results.`);
       }
 
+      for (const [imageUrlFromResult, resultData] of resultEntries) {
+        // imageUrlFromResult is the key from OCR results, expected to be a full URL.
+        const docIdOrUrlKey = imageUrlsMap.get(imageUrlFromResult) || imageUrlFromResult;
+        const isActualDocId = docIdOrUrlKey !== imageUrlFromResult && !docIdOrUrlKey.startsWith('http');
 
-      for (const [imageUrl, result] of resultEntries) {
-        // Attempt to get DB document ID, fallback to URL if mapping failed
-        const docIdOrUrlKey = imageUrlsMap.get(imageUrl) || imageUrl;
-        const isActualDocId = docIdOrUrlKey !== imageUrl; // Check if we have a real ID
 
-        const docFileName = isActualDocId
-                ? fetchedBatch.documents.find(d => d.id === docIdOrUrlKey)?.fileName || docIdOrUrlKey
-                : "Result for unmapped URL";
+        const docFileName = isActualDocId && fetchedBatch?.documents
+                ? fetchedBatch.documents.find(d => d.id === docIdOrUrlKey)?.fileName || `Document ID ${docIdOrUrlKey}`
+                : `Result for ${imageUrlFromResult.substring(imageUrlFromResult.lastIndexOf('/') + 1)}`;
+
 
         setStatusMessage(
             `Saving results for "${docFileName}" (${localProcessedCount + 1}/${totalResultsToProcess})...`
         );
 
-        // Handle cases where the result might indicate an error for that specific image
-        const isResultError = result && typeof result.error === 'string';
+        const isResultError = resultData && typeof resultData.error === 'string';
         const payload = {
           status: isResultError ? "FAILED" : "COMPLETED",
-          extractedContent: isResultError ? null : result?.extracted_text, // Use actual key
-          accuracy: (!isResultError && typeof result?.accuracy === "number") ? result.accuracy : null,
-          // Add counts only if result is not an error and they exist
-          wordCount: (!isResultError && typeof result?.word_count === "number") ? result.word_count : null,
-          characterCount: (!isResultError && typeof result?.character_count === "number") ? result.character_count : null,
-          // Add other fields like precision, loss if your OCR service provides them
-          // precision: (!isResultError && typeof result.precision === "number") ? result.precision : null,
-          // loss: (!isResultError && typeof result.loss === "number") ? result.loss : null,
-          errorMessage: isResultError ? result.error : null // Store specific error if present
+          extractedContent: isResultError ? null : resultData?.extracted_text,
+          accuracy: (!isResultError && typeof resultData?.accuracy === "number") ? resultData.accuracy : null,
+          wordCount: (!isResultError && typeof resultData?.word_count === "number") ? resultData.word_count : null,
+          characterCount: (!isResultError && typeof resultData?.character_count === "number") ? resultData.character_count : null,
+          errorMessage: isResultError ? resultData.error : null
         };
 
-        // Only update if we have an actual document ID
         if (isActualDocId) {
             try {
                 await batchService.updateDocumentResults(batchId, docIdOrUrlKey, payload);
             } catch (docUpdateError) {
                 console.error(`Failed to update document ${docIdOrUrlKey} ("${docFileName}"):`, docUpdateError);
-                setError(`Failed to save result for "${docFileName}".`);
+                setError(prev => (prev ? prev + "; " : "") + `Failed to save for "${docFileName}".`);
                 anyUpdateFailed = true;
-                // Optionally try marking as failed in DB again if primary update failed
                 try {
                     await batchService.updateDocumentResults(batchId, docIdOrUrlKey, { status: "FAILED", errorMessage: docUpdateError.message || "Update failed" });
                 } catch { /* Ignore nested error */ }
             }
         } else {
-             console.warn(`Skipping DB update for result associated with URL (no Doc ID found): ${imageUrl}`);
-             // If even one result couldn't be mapped back, consider the batch partially failed?
-             // Or just log it. For now, let's just log.
+             console.warn(`Skipping DB update for result associated with URL (no mapped Doc ID found): ${imageUrlFromResult}`);
+             // If this URL was not in `imageUrlsMap` with a proper ID, it means mapping failed earlier.
+             // This could be an issue if `imageUrls` (from navState) and `doc.storageKey` (from DB) aren't perfectly aligned.
         }
 
         localProcessedCount++;
         setProcessedCount(localProcessedCount);
 
-        // Update progress proportionally within the "Saving" step range
-        const saveStepStartProgress = (2 / (processingStepsCount + 1)) * 100;
-        const saveStepEndProgress = (3 / (processingStepsCount + 1)) * 100;
+        const saveStepStartProgress = (currentStepIndex -1 / (processingStepsCount + 1)) * 100; // currentStepIndex is 3 (save)
+        const saveStepEndProgress = (currentStepIndex / (processingStepsCount + 1)) * 100;
         const saveStepRange = saveStepEndProgress - saveStepStartProgress;
+
         setProgress(
           Math.min(
             Math.round(
               saveStepStartProgress +
                 (localProcessedCount / totalResultsToProcess) * saveStepRange
             ),
-            99 // Cap progress at 99 until finalization
+            99
           )
         );
       }
 
-      // 5. Finalize
-      const finalBatchStatus = anyUpdateFailed ? "PARTIAL_FAILURE" : "COMPLETED"; // Or use FAILED if any single update failed
+      const finalBatchStatus = anyUpdateFailed ? "PARTIAL_FAILURE" : "COMPLETED";
       setCurrentStepIndex(anyUpdateFailed ? steps.findIndex(s => s.key === 'fail') : steps.findIndex(s => s.key === 'complete'));
       setProgress(100);
       setStatusMessage(
@@ -254,79 +266,71 @@ const ExtractTextPage = () => {
           ? "Processing finished with some errors."
           : "Processing completed successfully!"
       );
-      setError(anyUpdateFailed ? (error || "Some documents could not be saved.") : null); // Set final error message if needed
+      // Keep existing error if anyUpdateFailed, or set specific "could not be saved" message
+      if (anyUpdateFailed && !error) {
+        setError("Some documents could not be saved correctly.");
+      } else if (!anyUpdateFailed) {
+        setError(null); // Clear errors if successful
+      }
 
 
       try {
         await batchService.updateBatch(batchId, { status: finalBatchStatus });
-        // Only aggregate if fully completed without errors? Or always? Depends on logic.
-        if (finalBatchStatus === "COMPLETED") {
+        if (finalBatchStatus === "COMPLETED" || finalBatchStatus === "PARTIAL_FAILURE") { // Aggregate even on partial
           await batchService.aggregateBatchMetrics(batchId);
         }
       } catch (finalUpdateError) {
-        console.error("Failed to update final batch status:", finalUpdateError);
+        console.error("Failed to update final batch status or aggregate metrics:", finalUpdateError);
         setError(
-          (error ? error + " | " : "") + `Failed to update final batch status.`
+          (error ? error + " | " : "") + `Failed to update final batch status/metrics.`
         );
-         // Ensure UI reflects failure state if final update fails
          setCurrentStepIndex(steps.findIndex(s => s.key === 'fail'));
       }
 
     } catch (err) {
-      // --- Main error handling ---
       console.error("Extraction process failed:", err);
       setError(err.message || "An unknown error occurred during extraction.");
-      setCurrentStepIndex(steps.findIndex(s => s.key === 'fail')); // Go to fail state
-      // Attempt to mark batch as FAILED in DB
+      setCurrentStepIndex(steps.findIndex(s => s.key === 'fail'));
       if (batchId) {
           try {
-              await batchService.updateBatch(batchId, { status: "FAILED" });
+              await batchService.updateBatch(batchId, { status: "FAILED", errorMessage: err.message });
           } catch { /* Ignore nested error */ }
       }
     } finally {
-        setIsProcessing(false); // Ensure processing stops on success or failure
+        setIsProcessing(false);
     }
-  }, [batchId, navigate, location.state]); // Add location.state as dependency
+  }, [batchId, navigate, location.state]); // location.state contains imageUrls and ocrProvider
 
-  // Start extraction on mount if state is present
   useEffect(() => {
-    if (location.state?.ocrProvider && location.state?.imageUrls) {
+    if (location.state?.ocrProvider && location.state?.imageUrls && !isProcessing && progress === 0 && !error) { // Added more conditions to prevent re-runs
         startExtraction();
-    } else if (!isProcessing) {
-        // Handle case where component is loaded directly without state
+    } else if (!isProcessing && !location.state?.imageUrls && !error) { // if no state and not already error/processing
         setError("Required information to start extraction is missing. Please go back to the batch details page.");
         setCurrentStepIndex(steps.findIndex(s => s.key === 'fail'));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startExtraction]); // Rerun if startExtraction changes (due to batchId/navState)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startExtraction, location.state, isProcessing, progress, error]);
 
 
-  // --- Actions ---
   const handleViewResults = () => {
-    // Navigate to results page (assuming it exists)
     navigate(`/extraction-results/${batchId}`);
   };
   const handleGoBack = () => {
-    // Navigate back to the previous page (Batch Details)
     navigate(-1);
   };
 
-
-  // Determine visual step index and completion/failure status
-  const displayStepIndex = error && !isProcessing
+  const displayStepIndex = error && !isProcessing && currentStepIndex !== steps.findIndex(s => s.key === 'complete')
     ? steps.findIndex((s) => s.key === "fail")
     : currentStepIndex;
-  const isCompleted = !isProcessing && displayStepIndex === steps.findIndex((s) => s.key === "complete");
-  const isFailed = !isProcessing && displayStepIndex === steps.findIndex((s) => s.key === "fail");
+  const isUltimatelyCompleted = !isProcessing && displayStepIndex === steps.findIndex((s) => s.key === "complete");
+  const isUltimatelyFailed = !isProcessing && displayStepIndex === steps.findIndex((s) => s.key === "fail");
 
 
-  // --- Render ---
   return (
     <div className="flex-1 h-full p-4 md:p-6 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
-      <PageHeader title="Extraction Progress" showBackArrow={true} />
+      <PageHeader title="Extraction Progress" showBackArrow={true} backPath={`/batch/${batchId}`} /> {/* Added specific back path */}
 
       <div className="px-3 max-w-2xl mx-auto">
-        {/* Header Info */}
         <div className="mt-6 mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
              Processing Batch
@@ -345,15 +349,14 @@ const ExtractTextPage = () => {
           </p>
         </div>
 
-        {/* Progress Bar */}
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2 overflow-hidden">
           <div
-            className={`h-full rounded-full transition-width duration-300 ease-linear ${
-              isCompleted
+            className={`h-full rounded-full transition-all duration-300 ease-linear ${ // Changed transition-width to transition-all
+              isUltimatelyCompleted
                 ? "bg-orange-500"
-                : isFailed
+                : isUltimatelyFailed
                 ? "bg-red-500"
-                : "bg-orange-400 animate-pulse" // Add pulse when processing
+                : "bg-orange-400 animate-pulse"
             }`}
             style={{ width: `${progress}%` }}
           ></div>
@@ -362,31 +365,28 @@ const ExtractTextPage = () => {
            {statusMessage} ({progress.toFixed(0)}%)
         </div>
 
-        {/* Steps Indicator */}
         <div className="space-y-4 mb-10">
-            {/* Filter steps dynamically based on error status */}
             {steps
-                .filter(step => !(step.key === 'fail' && !isFailed)) // Hide Fail unless it's the active/final state
-                .filter(step => !(step.key === 'complete' && isFailed)) // Hide Complete if failed
-                .map((step, index, filteredSteps) => {
-                    // Adjust indices based on filtered list if needed, or use keys
-                    const isActive = step.key === steps[displayStepIndex]?.key;
-                    const isCompletedStep = steps.findIndex(s => s.key === step.key) < displayStepIndex && !isFailed;
-                    const isFinalStateIcon = (step.key === 'complete' && isCompleted) || (step.key === 'fail' && isFailed);
+                .filter(step => !(step.key === 'fail' && !isUltimatelyFailed))
+                .filter(step => !(step.key === 'complete' && isUltimatelyFailed))
+                .map((step) => {
+                    const isActiveCurrentStep = step.key === steps[displayStepIndex]?.key;
+                    const isPastStep = steps.findIndex(s => s.key === step.key) < displayStepIndex && !isUltimatelyFailed;
+                    const isFinalStateIconToShow = (step.key === 'complete' && isUltimatelyCompleted) || (step.key === 'fail' && isUltimatelyFailed);
 
                     return (
                         <div
-                            key={step.key || index}
+                            key={step.key}
                             className={`flex items-center gap-3 md:gap-4 transition-opacity duration-300 ${
-                                !isCompletedStep && !isActive && !isFinalStateIcon ? "opacity-50" : ""
+                                !isPastStep && !isActiveCurrentStep && !isFinalStateIconToShow ? "opacity-50" : ""
                             }`}
                         >
                             <div className="flex-shrink-0">
-                                {isFinalStateIcon ? (
+                                {isFinalStateIconToShow ? (
                                     step.key === 'complete' ? <CheckCircle className="w-6 h-6 text-orange-500" /> : <AlertTriangle className="w-6 h-6 text-red-500" />
-                                ) : isCompletedStep ? (
+                                ) : isPastStep ? (
                                     <CheckCircle className="w-6 h-6 text-orange-500" />
-                                ) : isActive && isProcessing ? (
+                                ) : isActiveCurrentStep && isProcessing ? (
                                     <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
                                 ) : (
                                     <Circle className="w-6 h-6 text-gray-300 dark:text-gray-600" />
@@ -394,13 +394,13 @@ const ExtractTextPage = () => {
                             </div>
                             <div
                                 className={`text-sm md:text-base font-medium ${
-                                    isFinalStateIcon ? (step.key === 'complete' ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400") :
-                                    isCompletedStep ? "text-gray-700 dark:text-gray-300" :
-                                    isActive ? "text-orange-400 dark:text-orange-400" :
+                                    isFinalStateIconToShow ? (step.key === 'complete' ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400") :
+                                    isPastStep ? "text-gray-700 dark:text-gray-300" :
+                                    isActiveCurrentStep ? "text-orange-400 dark:text-orange-400" :
                                     "text-gray-400 dark:text-gray-500"
                                 }`}
                             >
-                                {step.name} {isActive && isProcessing && "..."}
+                                {step.name} {isActiveCurrentStep && isProcessing && "..."}
                             </div>
                         </div>
                     );
@@ -408,8 +408,7 @@ const ExtractTextPage = () => {
         </div>
 
 
-        {/* Error Display Area */}
-        {error && !isProcessing && (
+        {error && !isProcessing && ( // Show error if error is present and not processing
           <div className="mb-6 p-3 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-center">
             <p className="text-sm text-red-600 dark:text-red-300 flex items-center justify-center gap-2">
               <FiAlertTriangle /> {error}
@@ -417,19 +416,17 @@ const ExtractTextPage = () => {
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
           {isProcessing ? (
              <button
-              // Consider disabling cancel or making it more complex (backend support needed)
               onClick={handleGoBack}
-              title="Cannot cancel processing currently. Go back to view batch status."
-              className="w-full sm:w-auto px-6 py-2.5 bg-gray-400 text-white rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2 cursor-not-allowed"
-              disabled // Simple approach: disable cancel during processing
+              title="Processing in progress. Go back to view batch status or wait."
+              className="w-full sm:w-auto px-6 py-2.5 bg-gray-400 text-white rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2 opacity-70"
+              // disabled // Consider if truly disabled or just informational
             >
               <Loader2 size={18} className="animate-spin" /> Processing...
             </button>
-          ) : isCompleted ? ( // Only show View Results if completed successfully
+          ) : isUltimatelyCompleted ? (
             <>
               <button
                 onClick={handleGoBack}
@@ -444,7 +441,7 @@ const ExtractTextPage = () => {
                 <Eye size={18} /> View Results
               </button>
             </>
-          ) : ( // Failed or initial state (before processing started due to error)
+          ) : (
             <>
               <button
                 onClick={handleGoBack}
@@ -452,10 +449,15 @@ const ExtractTextPage = () => {
               >
                 Back to Batch
               </button>
-               {/* Optionally add a Retry button if failed */}
-               {isFailed && (
+               {isUltimatelyFailed && ( // Only show Retry if it's definitively failed
                     <button
-                        onClick={startExtraction} // Re-trigger the extraction
+                        onClick={() => { // Reset states before retrying
+                            setError(null);
+                            setProgress(0);
+                            setCurrentStepIndex(0);
+                            setStatusMessage("Initializing retry...");
+                            startExtraction();
+                        }}
                         className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2 cursor-pointer"
                     >
                        Retry Extraction
