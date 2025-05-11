@@ -55,11 +55,11 @@ model User {
 // --- Batch and Document models remain the same ---
 
 model Batch {
-  id                  String  @id @default(auto()) @map("_id") @db.ObjectId
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
   name                String
-  totalFileSize       BigInt  @default(0)
-  totalFileCount      Int     @default(0)
-  status              Status  @default(NEW)
+  totalFileSize       BigInt    @default(0)
+  totalFileCount      Int       @default(0)
+  status              Status    @default(NEW)
   extractedContent    String?
   accuracy            Float?
   precision           Float?
@@ -67,30 +67,32 @@ model Batch {
   totalWordCount      Int?
   totalCharacterCount Int?
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  userId    String     @db.ObjectId
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   documents Document[]
 
   @@map("batches")
 }
 
 model Document {
-  id               String  @id @default(auto()) @map("_id") @db.ObjectId
-  fileName         String
-  fileSize         BigInt
-  mimeType         String?
-  storageKey       String
-  status           Status  @default(UPLOADED)
-  extractedContent String?
-  accuracy         Float?
-  precision        Float?
-  loss             Float?
-  wordCount        Int?
-  characterCount   Int?
-  enhancedText     String?
-  translatedText   String?
+  id                 String @id @default(auto()) @map("_id") @db.ObjectId
+  fileName           String
+  fileSize           BigInt
+  mimeType           String?
+  storageKey         String    // Path/URL to original image
+  status             Status @default(UPLOADED)
+  extractedContent   String?
+  accuracy           Float?
+  precision          Float?
+  loss               Float?
+  wordCount          Int?
+  characterCount     Int?
+  enhancedText       String?
+  translatedText     String?
+  // --- ADD THIS NEW FIELD ---
+  enhancedStorageKey String? // Path/URL to the enhanced image from another API
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
