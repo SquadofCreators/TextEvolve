@@ -30,6 +30,7 @@
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
+    "react-compare-slider": "^3.1.0",
     "react-device-detect": "^2.2.3",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
