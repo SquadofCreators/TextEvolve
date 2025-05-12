@@ -2,7 +2,7 @@ import React from 'react'
 
 export const designedByData = {
     name: 'Dynamic Dreamers',
-    link: 'https://squadofcreators.github.io/SquadofCreators/',
+    link: 'https://squadofcreators.github.io/TextEvolve-home/',
 }
 
 function DesignedBy() {
