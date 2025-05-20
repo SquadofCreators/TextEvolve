@@ -240,7 +240,7 @@ const ExtractTextPage = () => {
     }, [location.state]); // Only re-run if location.state changes. startExtraction is memoized with location.state.
 
 
-    const handleViewResults = () => navigate(`/extraction-results/${batchId}`);
+    const handleViewResults = () => navigate(`/extraction-results/${batchId}`, { replace: true });
     const handleGoBack = () => navigate(`/batch/${batchId}`); // Go back to specific batch
 
     const displayStepIndex = error && !isProcessing && currentStepIndex !== steps.findIndex(s => s.key === 'complete')
