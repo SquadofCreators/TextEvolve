@@ -2,6 +2,7 @@ import axios from 'axios';
 
 // Use the base URL for all AI-related API calls from VITE environment variables
 const AI_API_BASE_URL = import.meta.env.VITE_AI_API_URL;
+const CUSTOM_AI_API_URL = import.meta.env.VITE_CUSTOM_AI_API_URL;
 
 // Default timeout for OCR tasks (e.g., 5 minutes)
 const OCR_TIMEOUT = 300000;
@@ -148,9 +149,69 @@ const azureOcrMultipleImages = async (imageUrls) => {
     }
 };
 
+// --- NEW CUSTOM TAMIL-ENGLISH OCR API FUNCTIONS ---
+
+/**
+ * Performs OCR using the Custom Tamil OCR API for a single image URL.
+ * @param {string} imageUrl - A publicly accessible image URL.
+ * @returns {Promise<object>} A promise resolving to the OCR result object.
+ */
+const customOcrSingleImage = async (imageUrl) => {
+    const serviceName = 'Custom Tamil OCR (Single)';
+    if (!CUSTOM_AI_API_URL) {
+        throw new Error("Custom AI service endpoint (VITE_CUSTOM_AI_API_URL) is not configured.");
+    }
+    if (!imageUrl) {
+        throw new Error("No image URL provided for Custom Tamil OCR.");
+    }
+
+    const apiUrl = `${CUSTOM_AI_API_URL}/ocr/single`; // Endpoint for your custom single image OCR
+    const payload = { image: imageUrl };
+
+    try {
+        const response = await axios.post(apiUrl, payload, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: OCR_TIMEOUT
+        });
+        return response.data; // The response structure is an object with the URL as key
+    } catch (error) {
+        handleApiError(error, serviceName, apiUrl);
+    }
+};
+
+/**
+ * Performs OCR using the Custom Tamil OCR API for multiple image URLs.
+ * @param {string[]} imageUrls - An array of publicly accessible image URLs.
+ * @returns {Promise<object>} A promise resolving to the OCR results object.
+ */
+const customOcrMultipleImages = async (imageUrls) => {
+    const serviceName = 'Custom Tamil OCR (Multiple)';
+    if (!CUSTOM_AI_API_URL) {
+        throw new Error("Custom AI service endpoint (VITE_CUSTOM_AI_API_URL) is not configured.");
+    }
+    if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+        throw new Error("Invalid or empty image URL array provided for Custom Tamil OCR.");
+    }
+
+    const apiUrl = `${CUSTOM_AI_API_URL}/ocr/multiple`; // Endpoint for your custom multiple image OCR
+    const payload = { images: imageUrls };
+
+    try {
+        const response = await axios.post(apiUrl, payload, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: OCR_TIMEOUT
+        });
+        return response.data; // The response structure is an object with URLs as keys
+    } catch (error) {
+        handleApiError(error, serviceName, apiUrl);
+    }
+};
+
 export const textExtractService = {
     googleOcrSingleImage,
     googleOcrMultipleImages,
     azureOcrSingleImage,
     azureOcrMultipleImages,
+    customOcrSingleImage,      
+    customOcrMultipleImages,   
 };

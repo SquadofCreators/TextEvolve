@@ -6,13 +6,14 @@ import {
     CheckCircle,
     Loader2,
     Circle,
-    AlertTriangle as LucideAlertTriangle, // Renamed to avoid conflict with FiAlertTriangle
+    AlertTriangle as LucideAlertTriangle,
     Eye,
 } from "lucide-react";
 import PageHeader from "../components/utility/PageHeader";
 import { batchService } from "../services/batchService";
 import { textExtractService } from "../services/textExtractService";
-import { FiAlertTriangle } from 'react-icons/fi'; // Keep this if used elsewhere, or unify
+import { FiAlertTriangle } from 'react-icons/fi';
+import { ocrProviders } from '../data/OcrFilters'; // Import to get provider details
 
 const steps = [
     { name: "Fetching Batch Info", key: "fetch" },
@@ -36,24 +37,28 @@ const ExtractTextPage = () => {
     const [error, setError] = useState(null);
     const [processedCount, setProcessedCount] = useState(0);
     const [totalDocumentsToProcess, setTotalDocumentsToProcess] = useState(0);
+    const [currentOcrProviderLabel, setCurrentOcrProviderLabel] = useState('');
 
-    const processingStepsCount = steps.length - 2; // Exclude complete and fail for step calculation
+    const processingStepsCount = steps.length - 2;
+
+    const getOcrProviderLabel = useCallback((providerValue) => {
+        const provider = ocrProviders.find(p => p.value === providerValue);
+        return provider ? provider.label : providerValue || 'Selected AI';
+    }, []);
 
     const startExtraction = useCallback(async () => {
         const navState = location.state;
-        // --- MODIFIED: Check for documentsToProcess ---
         if (!navState || !navState.ocrProvider || !navState.documentsToProcess || navState.documentsToProcess.length === 0) {
             setError("Extraction cannot start. Required info (OCR Provider, Documents to Process) not received from previous page.");
             setIsProcessing(false);
             setCurrentStepIndex(steps.findIndex(s => s.key === 'fail'));
             return;
         }
-        // --- END MODIFICATION ---
 
         const { ocrProvider, documentsToProcess, batchName: navBatchName } = navState;
-        const imageUrlsForOcr = documentsToProcess.map(doc => doc.url); // Get URLs to send to OCR
+        const imageUrlsForOcr = documentsToProcess.map(doc => doc.url);
         setTotalDocumentsToProcess(imageUrlsForOcr.length);
-
+        setCurrentOcrProviderLabel(getOcrProviderLabel(ocrProvider));
 
         if (!batchId) {
             setError("No Batch ID found in URL.");
@@ -65,11 +70,10 @@ const ExtractTextPage = () => {
         setError(null);
         setProcessedCount(0);
         setProgress(0);
-        setCurrentStepIndex(0); // Start at "Fetching Batch Info"
+        setCurrentStepIndex(0);
         setStatusMessage("Fetching batch information...");
         setBatchName(navBatchName || `Batch ${batchId}`);
 
-        // --- MODIFIED: Create a map from processed URL to its original docId ---
         const urlToDocIdMap = new Map();
         documentsToProcess.forEach(docInfo => {
             if (docInfo && docInfo.url && docInfo.docId) {
@@ -78,18 +82,10 @@ const ExtractTextPage = () => {
                 console.warn("[ExtractTextPage] Invalid item in documentsToProcess from navigation state:", docInfo);
             }
         });
-        console.log("[ExtractTextPage] Created urlToDocIdMap:", urlToDocIdMap);
-        // --- END MODIFICATION ---
 
         try {
-            // Step 0: Fetch Batch Info (Optional, primarily for display or if not all info passed in navState)
-            // For now, we assume batchName from navState is enough for display.
-            // If you need other batch details, fetch them here.
-            // const fetchedBatch = await batchService.getBatchById(batchId);
-            // if (!fetchedBatch) throw new Error("Batch data could not be retrieved.");
-
             setProgress(Math.round((1 / (processingStepsCount + 1)) * 100));
-            setCurrentStepIndex(1); // "Preparing Images"
+            setCurrentStepIndex(1);
             setStatusMessage("Preparing images for AI processing...");
 
             try {
@@ -99,20 +95,24 @@ const ExtractTextPage = () => {
             }
 
             setProgress(Math.round((2 / (processingStepsCount + 1)) * 100));
-            setCurrentStepIndex(2); // "Extracting Text (AI)"
-            setStatusMessage(`Sending ${imageUrlsForOcr.length} image(s) to ${ocrProvider === 'google' ? 'Google' : 'Azure'} AI...`);
+            setCurrentStepIndex(2);
+            setStatusMessage(`Sending ${imageUrlsForOcr.length} image(s) to ${getOcrProviderLabel(ocrProvider)}...`);
 
             let ocrResults;
             const isSingleImage = imageUrlsForOcr.length === 1;
 
             if (ocrProvider === 'google') {
-                ocrResults = isSingleImage 
-                    ? await textExtractService.googleOcrSingleImage(imageUrlsForOcr[0]) 
+                ocrResults = isSingleImage
+                    ? await textExtractService.googleOcrSingleImage(imageUrlsForOcr[0])
                     : await textExtractService.googleOcrMultipleImages(imageUrlsForOcr);
             } else if (ocrProvider === 'azure') {
-                ocrResults = isSingleImage 
-                    ? await textExtractService.azureOcrSingleImage(imageUrlsForOcr[0]) 
+                ocrResults = isSingleImage
+                    ? await textExtractService.azureOcrSingleImage(imageUrlsForOcr[0])
                     : await textExtractService.azureOcrMultipleImages(imageUrlsForOcr);
+            } else if (ocrProvider === 'textevolve_v1') { // ✨ Changed from 'custom_tamil'
+                ocrResults = isSingleImage
+                    ? await textExtractService.customOcrSingleImage(imageUrlsForOcr[0])
+                    : await textExtractService.customOcrMultipleImages(imageUrlsForOcr);
             } else {
                 throw new Error(`Unsupported OCR provider: ${ocrProvider}`);
             }
@@ -121,81 +121,88 @@ const ExtractTextPage = () => {
 
             if (!ocrResults || typeof ocrResults !== 'object' || Object.keys(ocrResults).length === 0) {
                 if (isSingleImage && ocrResults && typeof ocrResults.error === 'string') {
-                    ocrResults = { [imageUrlsForOcr[0]]: ocrResults }; // Wrap single error for consistent processing
+                    ocrResults = { [imageUrlsForOcr[0]]: ocrResults };
                 } else {
-                    throw new Error("Invalid or empty response from OCR service.");
+                    const emptyResultsWithErrors = {};
+                    imageUrlsForOcr.forEach(url => {
+                        emptyResultsWithErrors[url] = { error: "OCR service returned no data for this image." };
+                    });
+                    ocrResults = emptyResultsWithErrors;
+                    console.warn("[ExtractTextPage] OCR service returned empty or invalid results, creating error entries for each image.");
                 }
             }
 
-            setCurrentStepIndex(3); // "Saving Results"
+            setCurrentStepIndex(3);
             let localProcessedCount = 0;
             let anyUpdateFailed = false;
-            const resultEntries = Object.entries(ocrResults);
-            const totalResultsFromOcr = resultEntries.length;
-
-            if (totalResultsFromOcr === 0 && imageUrlsForOcr.length > 0) {
-                throw new Error("OCR service returned no results for the images.");
-            }
-
-            for (const [imageUrlFromResult, resultData] of resultEntries) {
+            let successfulExtractions = 0;
+            
+            for (const imageUrlToProcess of imageUrlsForOcr) {
                 localProcessedCount++;
                 setProcessedCount(localProcessedCount);
-                
-                // --- MODIFIED: Use urlToDocIdMap to get the correct document ID ---
-                const docDetails = urlToDocIdMap.get(imageUrlFromResult);
+
+                const docDetails = urlToDocIdMap.get(imageUrlToProcess);
                 const docIdToUpdate = docDetails?.id;
-                const originalFileName = docDetails?.fileName || `File for ${imageUrlFromResult.substring(imageUrlFromResult.lastIndexOf('/') + 1)}`;
-                // --- END MODIFICATION ---
+                const originalFileName = docDetails?.fileName || `File for ${imageUrlToProcess.substring(imageUrlToProcess.lastIndexOf('/') + 1)}`;
+                
+                setStatusMessage(`Saving results for "${originalFileName}" (${localProcessedCount}/${imageUrlsForOcr.length})...`);
 
-                setStatusMessage(`Saving results for "${originalFileName}" (${localProcessedCount}/${totalResultsFromOcr})...`);
+                const resultData = ocrResults[imageUrlToProcess];
+                const isResultError = !resultData || (resultData && typeof resultData.error === 'string');
+                const extractedTextFromOCR = resultData?.extracted_text;
 
-                const isResultError = resultData && typeof resultData.error === 'string';
                 const payload = {
                     status: isResultError ? "FAILED" : "COMPLETED",
-                    extractedContent: isResultError ? null : resultData?.extracted_text,
+                    extractedContent: (!isResultError && extractedTextFromOCR && extractedTextFromOCR.trim() !== "") ? extractedTextFromOCR : null,
                     accuracy: (!isResultError && typeof resultData?.accuracy === "number") ? resultData.accuracy : null,
                     wordCount: (!isResultError && typeof resultData?.word_count === "number") ? resultData.word_count : null,
                     characterCount: (!isResultError && typeof resultData?.character_count === "number") ? resultData.character_count : null,
-                    // Store error from OCR if any
-                    errorMessage: isResultError ? `OCR Error (${docDetails?.sourceUsed || 'unknown source'}): ${resultData.error}` : null,
-                    // Optionally store which source was used for this extraction
-                    // lastExtractionSource: docDetails?.sourceUsed 
+                    errorMessage: isResultError ? `OCR Error (${docDetails?.sourceUsed || 'unknown source'}): ${resultData?.error || "Unknown OCR error"}` : null,
                 };
+
+                if (!isResultError && payload.extractedContent) {
+                    successfulExtractions++;
+                }
                 
-                if (docIdToUpdate) { // Only update if we have a valid docId
+                if (docIdToUpdate) {
                     try {
-                        console.log(`[ExtractTextPage] Updating DB for docId: ${docIdToUpdate}, URL: ${imageUrlFromResult}, Payload:`, payload);
                         await batchService.updateDocumentResults(batchId, docIdToUpdate, payload);
                     } catch (docUpdateError) {
                         console.error(`[ExtractTextPage] Failed to update document ${docIdToUpdate} ("${originalFileName}"):`, docUpdateError);
                         setError(prev => (prev ? prev + "; " : "") + `Save failed for "${originalFileName}".`);
                         anyUpdateFailed = true;
-                        try { // Attempt to mark doc as FAILED in DB if update fails
+                        try {
                             await batchService.updateDocumentResults(batchId, docIdToUpdate, { status: "FAILED", errorMessage: `DB Update Error: ${docUpdateError.message || "Update failed"}` });
-                        } catch { /* Ignore nested error on marking as FAILED */ }
+                        } catch { /* Ignore nested error */ }
                     }
                 } else {
-                    console.warn(`[ExtractTextPage] Skipping DB update for OCR result from URL: ${imageUrlFromResult} (No mapped Doc ID). This should not happen if documentsToProcess was correctly passed and mapped.`);
+                    console.warn(`[ExtractTextPage] Skipping DB update for OCR result from URL: ${imageUrlToProcess} (No mapped Doc ID).`);
                     setError(prev => (prev ? prev + "; " : "") + `Could not map result for one image to DB.`);
-                    anyUpdateFailed = true; // Consider this a failure in the overall process
+                    anyUpdateFailed = true;
                 }
 
-                // Progress calculation within the "Saving Results" step
                 const saveStepStartProgress = ( (steps.findIndex(s => s.key === 'save') -1) / (processingStepsCount + 1) ) * 100;
                 const saveStepEndProgress = ( (steps.findIndex(s => s.key === 'save')) / (processingStepsCount + 1) ) * 100;
                 const saveStepTotal = saveStepEndProgress - saveStepStartProgress;
 
                 setProgress(
-                    Math.min( Math.round(saveStepStartProgress + (localProcessedCount / totalResultsFromOcr) * saveStepTotal), 99)
+                    Math.min( Math.round(saveStepStartProgress + (localProcessedCount / imageUrlsForOcr.length) * saveStepTotal), 99)
                 );
             }
 
-            const finalBatchStatus = anyUpdateFailed ? "PARTIAL_FAILURE" : "COMPLETED";
-            setCurrentStepIndex(anyUpdateFailed ? steps.findIndex(s => s.key === 'fail') : steps.findIndex(s => s.key === 'complete'));
+            const allIntendedDocsFailed = successfulExtractions === 0 && imageUrlsForOcr.length > 0;
+            const finalBatchStatus = anyUpdateFailed ? (allIntendedDocsFailed ? "FAILED" : "PARTIAL_FAILURE") : "COMPLETED";
+
+            setCurrentStepIndex(finalBatchStatus === "FAILED" || (anyUpdateFailed && allIntendedDocsFailed) ? steps.findIndex(s => s.key === 'fail') : steps.findIndex(s => s.key === 'complete'));
             setProgress(100);
-            setStatusMessage(anyUpdateFailed ? "Processing finished with some errors." : "Processing completed successfully!");
-            if (anyUpdateFailed && !error) { // Set a general error if individual file errors occurred but no overall process error
-                setError("Some documents could not be saved correctly. Check console for details.");
+            setStatusMessage(
+                finalBatchStatus === "FAILED" ? "Processing failed for all documents." :
+                finalBatchStatus === "PARTIAL_FAILURE" ? "Processing finished with some errors." :
+                "Processing completed successfully!"
+            );
+            
+            if (anyUpdateFailed && !error) {
+                setError("Some documents could not be processed or saved correctly.");
             } else if (!anyUpdateFailed) {
                 setError(null);
             }
@@ -223,25 +230,23 @@ const ExtractTextPage = () => {
         } finally {
             setIsProcessing(false);
         }
-    }, [batchId, location.state]); // Removed navigate from deps as it's stable, added isProcessing, progress, error
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [batchId, location.state, getOcrProviderLabel]);
 
     useEffect(() => {
         const navState = location.state;
-        // Check for documentsToProcess instead of imageUrls directly
         if (navState?.ocrProvider && navState?.documentsToProcess && navState.documentsToProcess.length > 0 && !isProcessing && progress === 0 && !error) {
-            console.log("[ExtractTextPage] useEffect: Valid navigation state found, starting extraction.", navState);
             startExtraction();
-        } else if (!isProcessing && (!navState?.documentsToProcess || navState.documentsToProcess.length === 0) && !error) {
-            console.error("[ExtractTextPage] useEffect: Required information (documentsToProcess) missing in navigation state.");
+        } else if (!isProcessing && progress === 0 && (!navState?.documentsToProcess || navState.documentsToProcess.length === 0) && !error) {
             setError("Required information to start extraction is missing. Please go back to the batch details page and try again.");
             setCurrentStepIndex(steps.findIndex(s => s.key === 'fail'));
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [location.state]); // Only re-run if location.state changes. startExtraction is memoized with location.state.
+    }, [location.state]);
 
 
     const handleViewResults = () => navigate(`/extraction-results/${batchId}`, { replace: true });
-    const handleGoBack = () => navigate(`/batch/${batchId}`); // Go back to specific batch
+    const handleGoBack = () => navigate(`/batch/${batchId}`);
 
     const displayStepIndex = error && !isProcessing && currentStepIndex !== steps.findIndex(s => s.key === 'complete')
         ? steps.findIndex((s) => s.key === "fail")
@@ -249,10 +254,11 @@ const ExtractTextPage = () => {
     const isUltimatelyCompleted = !isProcessing && displayStepIndex === steps.findIndex((s) => s.key === "complete");
     const isUltimatelyFailed = !isProcessing && displayStepIndex === steps.findIndex((s) => s.key === "fail");
 
+    // --- JSX Render ---
+    // (Keep your existing JSX structure, I'm just showing the top part with the OCR provider label for context)
     return (
         <div className="flex-1 h-full p-4 md:p-6 overflow-y-auto bg-slate-100 dark:bg-slate-900 rounded-lg">
             <PageHeader title="Extraction Progress" showBackArrow={true} backPath={`/batch/${batchId}`} />
-
             <div className="px-3 max-w-2xl mx-auto">
                 <div className="mt-6 mb-8 text-center">
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
@@ -264,19 +270,25 @@ const ExtractTextPage = () => {
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                         ID: <span className="font-medium text-orange-600 dark:text-orange-400 break-all">{batchId}</span>
                     </p>
+                    {/* Display current OCR Provider Label */}
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        OCR Provider: <span className="font-medium text-slate-700 dark:text-slate-300">{currentOcrProviderLabel || "Loading..."}</span>
+                    </p>
                      {totalDocumentsToProcess > 0 && (
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                            ({processedCount} / {totalDocumentsToProcess} documents processed in current save step)
+                            (Processed {processedCount} / {totalDocumentsToProcess} in current save step)
                         </p>
                     )}
                 </div>
 
+                {/* Rest of your JSX for progress bar, steps, error messages, buttons */}
+                {/* ... (Keep your existing JSX structure) ... */}
                 <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 mb-2 overflow-hidden">
                     <div
                         className={`h-full rounded-full transition-all duration-300 ease-linear ${
                             isUltimatelyCompleted ? "bg-green-500" :
                             isUltimatelyFailed ? "bg-red-500" :
-                            "bg-orange-500 animate-pulse" // Changed for better visibility
+                            "bg-orange-500 animate-pulse"
                         }`}
                         style={{ width: `${progress}%` }}
                     ></div>
@@ -343,7 +355,7 @@ const ExtractTextPage = () => {
                                 Back to Batch
                             </button>
                             {isUltimatelyFailed && (
-                                <button onClick={() => { setError(null); setProgress(0); setCurrentStepIndex(0); setStatusMessage("Initializing retry..."); startExtraction(); }}
+                                <button onClick={() => { setError(null); setProgress(0); setCurrentStepIndex(0); setStatusMessage("Initializing retry..."); setProcessedCount(0); startExtraction(); }}
                                     className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium flex items-center justify-center gap-2 cursor-pointer">
                                     Retry Extraction
                                 </button>
